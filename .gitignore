@@ -1,0 +1,10 @@
+build
+lua/*.o
+lua/lua.a
+game
+tags
+test
+dodgame
+oopgame
+session.vim
+error.log
