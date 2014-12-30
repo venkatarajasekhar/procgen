@@ -19,8 +19,9 @@ void main() {
 	vec3 N = normalize(Normal.rgb);
 	vec4 textureColor = texture2D(gSampler, Tex);
 	vec3 lightFrom = normalize( vec3( -4.0,2.0,4.0 ) );
-	float lightEffect = dot( N, lightFrom );
-	lightEffect = ( 0.1 + (lightEffect) ) / 1.0;
+	float lightEffect = max(dot( N, lightFrom ),0.0);
+	float ambient = 0.2;
+	lightEffect = clamp( lightEffect + ambient, 0.0, 1.0 );
 	//vec3 diffuse = Color.xyz * lightEffect;
 	//gl_FragColor = textureColor * vec4(diffuse,1.0);
 	vec3 diffuse = textureColor.rgb * lightEffect;

@@ -1,10 +1,7 @@
 build
 lua/*.o
 lua/lua.a
-game
+procedural
 tags
-test
-dodgame
-oopgame
 session.vim
 error.log

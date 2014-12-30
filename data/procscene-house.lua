@@ -1,5 +1,5 @@
 function ScriptName()
-	return "tree"
+	return "house"
 end
 
 nodePos = { }
@@ -9,7 +9,6 @@ sceneNodeTexture = { }
 sceneNodeParams = { }
 sceneNodeMesh = { "end" }
 seed=100
-branchDepth = 7
 
 function Clear()
 	nodePos = { }
@@ -100,11 +99,30 @@ end
 
 pos = { 0,0,0 }
 rot = { 0,0,0 }
-scale = { 0.2,2,0.2 }
-AddTree( pos, rot, scale, branchDepth, 1 )
+scale = { 1,1,1 }
+wallTexture = "checker"
+roofTexture = "grass"
+doorTexture = "wood"
 
 function Fixup() 
 	Clear()
-	AddTree( pos, rot, scale, branchDepth, 1 )
+	doorPos = copy(pos)
+	doorPos[1] = doorPos[1] + scale[1] * 1.5
+	doorPos[2] = doorPos[2] - scale[2] * 0.5
+	doorScale = copy(scale)
+	doorScale[1] = doorScale[1] * 0.01
+	doorScale[2] = doorScale[2] * 0.5
+	doorScale[3] = doorScale[3] * 0.2
+	roofPos = copy(pos)
+	roofPos[2] = roofPos[2] + scale[2] * 1.7
+	roofScale = copy(scale)
+	roofScale[1] = roofScale[1] * 0.5
+	roofScale[2] = roofScale[2] * 2.0
+	roofScale[3] = roofScale[3] * 2.0
+	AddNode( "cube", wallTexture, "", pos, rot, scale )
+	AddNode( "cylinder", roofTexture, "panels=3 r=1 h=1 Fixup()", roofPos, {0,0,1.57}, roofScale )
+	AddNode( "cube", doorTexture, "", doorPos, rot, doorScale )
 end
+
+Fixup()
 

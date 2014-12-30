@@ -23,8 +23,9 @@ end
 function GetCubeV( vert )
 	perPanelTheta = 6.284/panels
 	if vert < capverts then
+		currentH = h
 		if vert >= capverts/2 then
-			h = - h
+			currentH = - h
 		end
 		seg = (vert/3)%panels
 		seg = seg-seg%1
@@ -34,7 +35,7 @@ function GetCubeV( vert )
 			theta = theta + perPanelTheta
 		end
 		x = Cos(theta) * r
-		y = h
+		y = currentH
 		z = Sin(theta) * r
 		x=x-(x%0.01)
 		z=z-(z%0.01)

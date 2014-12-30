@@ -17,21 +17,28 @@ using namespace std;
 
 struct Scene {
 	struct Node {
-		Node( string mesh, string texture, string params, const Mat44 &orientation ) : o(orientation), m(mesh), t(texture), p(params) {}
+		Node( string mesh, string texture, string params, const Mat44 &orientation ) : o(orientation), m(mesh), t(texture), p(params), isScene(false) {}
+		Node( string scene, string params, const Mat44 &orientation ) : o(orientation), s(scene), p(params), isScene(true) {}
 		Mat44 o;
-		string m,t,p;
+		string s,m,t,p;
+		bool isScene;
 	};
 	typedef vector<Node> NodeVec;
 	NodeVec m_nodes;
 	void PushNode( string mesh, string texture, string params, const Mat44 &orientation ) {
 		m_nodes.push_back( Node( mesh, texture, params, orientation ) );
 	}
-	void Render();
+	void PushNode( string scene, string params, const Mat44 &orientation ) {
+		m_nodes.push_back( Node( scene, params, orientation ) );
+	}
+	void Render( const Mat44 &rootTransform );
 };
 
 struct LuaGenerator {
 	lua_State *L;
 	Scene *scene;
+	typedef map<string,Scene*> ParamScenes;
+	ParamScenes paramScenes;
 	BadMesh *mesh;
 	typedef map<string,BadMesh*> ParamMeshes;
 	ParamMeshes paramMeshes;
@@ -91,7 +98,7 @@ struct LuaGenerator {
 			if( L && texture ) {
 				GenTexture();
 			}
-			if( L && scene ) {
+			if( L && ( scene || paramScenes.size() ) ) {
 				GenScene();
 			}
 		}
@@ -193,12 +200,21 @@ struct LuaGenerator {
 	string GetNodeTexture( int n ) { return GetStringFromLua( "GetSceneNodeTexture", n ); }
 	string GetNodeParams( int n ) { return GetStringFromLua( "GetSceneNodeParams", n ); }
 
-	void GenScene() {
-		if( scene ) { delete scene; scene = 0; }
+	void GenScene( const char *params = 0 ) {
+		if( params ) {
+			PushParams( params );
+		} else {
+			Log(3,"Clearing all previous generated scenes for %s", m_filename );
+			if( scene ) { delete scene; scene = 0; }
+			for( ParamScenes::iterator i = paramScenes.begin(); i != paramScenes.end(); ++i ) {
+				delete i->second;
+			}
+			paramScenes.clear();
+		}
 
 		int nodeCount = GetNumNodes();
 		if( nodeCount > 0 ) {
-			scene = new Scene();
+			Scene *s = new Scene();
 			for( int v = 0; v < nodeCount; ++v ) {
 				Vec3 pos = GetNodePos( v );
 				Vec3 rotation = GetNodeRotation( v );
@@ -211,10 +227,22 @@ struct LuaGenerator {
 				string meshName = GetNodeMesh( v );
 				string textureName = GetNodeTexture( v );
 				string params = GetNodeParams( v );
-				Log(3,"SceneNode %s:%s\n", meshName.c_str(), textureName.c_str());
-				scene->PushNode( meshName, textureName, params, orientation );
+				if( textureName.size() == 0 ) {
+					// doing a scene
+					Log(3,"SceneNode Scene %s:%s\n", meshName.c_str(), textureName.c_str() );
+					s->PushNode( meshName, params, orientation );
+				} else {
+					// doing a mesh
+					Log(3,"SceneNode Mesh %s:%s\n", meshName.c_str(), textureName.c_str());
+					s->PushNode( meshName, textureName, params, orientation );
+				}
 			}
 			//mesh->UVsFromBB();
+			if( params ) {
+				paramScenes[params] = s;
+			} else {
+				scene = s;
+			}
 		}
 	}
 	void GenMesh( const char *params = 0 ) {
@@ -269,29 +297,35 @@ struct LuaGenerator {
 	}
 };
 
+LuaGenerator * AddSceneGenerator( const char *guessName, const char *params = 0 );
 LuaGenerator * AddMeshGenerator( const char *guessName, const char *params = 0 );
 LuaGenerator * AddTextureGenerator( const char *guessName );
 
-void Scene::Render() {
+void Scene::Render( const Mat44 &rootTransform ) {
 	for( NodeVec::iterator i = m_nodes.begin(); i != m_nodes.end(); ++i ) {
-		LuaGenerator *m = AddMeshGenerator(i->m.c_str(), i->p.c_str());
-		AddTextureGenerator(i->t.c_str());
+		Mat44 transform = i->o * rootTransform;
+		if( i->isScene ) {
+			//Log( 3, "Found scene, adding \"%s\"\n", i->s.c_str() );
+			LuaGenerator *s = AddSceneGenerator( i->s.c_str(), i->p.c_str());
+			Scene *scene = s->paramScenes[i->p];
+			scene->Render( transform );
+		} else {
+			LuaGenerator *m = AddMeshGenerator(i->m.c_str(), i->p.c_str());
+			AddTextureGenerator(i->t.c_str());
 
-		SetTexture( i->t.c_str(), 0 );
-		SetModel( i->o );
-		BadMesh *bm = m->paramMeshes[i->p];
-		if( bm ) {
-			bm->DrawTriangles();
+			SetTexture( i->t.c_str(), 0 );
+			SetModel( transform );
+			BadMesh *bm = m->paramMeshes[i->p];
+			if( bm ) {
+				bm->DrawTriangles();
+			}
 		}
-		//Log(3,"Render mesh:texture %s:%s at %f,%f,%f,%f \n", i->m.c_str(), i->t.c_str(), i->o.w.x, i->o.w.y, i->o.w.z, i->o.w.w );
-		//Log(3,"Render %f,%f,%f,%f \n", i->o.x.x, i->o.x.y, i->o.x.z, i->o.x.w );
-		//Log(3,"Render %f,%f,%f,%f \n", i->o.y.x, i->o.y.y, i->o.y.z, i->o.y.w );
-		//Log(3,"Render %f,%f,%f,%f \n", i->o.z.x, i->o.z.y, i->o.z.z, i->o.z.w );
 	}
 }
 
 typedef std::map<std::string, LuaGenerator*> GenMap;
 GenMap gGenerators;
+LuaGenerator *gRootScene;
 
 extern GLShader Shader_Prelit;
 BadMesh *cube, *procmesh;
@@ -342,21 +376,15 @@ void GameUpdate() {
 	}
 	modelMat.Scale(2.0f);
 	SetModel( modelMat );
-	//if( gGenerators.count( "test" ) ) {
-		//gGenerators["test"]->mesh->DrawTriangles();
-	//} else {
-		//cube->DrawTriangles();
-	//}
-
-//	if( gGenerators.count( "land" ) ) {
-//		gGenerators["land"]->mesh->DrawTriangles();
-//	}
-
-	for( GenMap::iterator i = gGenerators.begin(); i != gGenerators.end(); ++i ) {
-		if( i->second->scene ) {
-			i->second->scene->Render();
-		}
+	
+	if( gRootScene ) {
+		gRootScene->scene->Render(gIdentityMat);
 	}
+	//for( GenMap::iterator i = gGenerators.begin(); i != gGenerators.end(); ++i ) {
+	//	if( i->second->scene ) {
+	//		i->second->scene->Render(gIdentityMat);
+	//	}
+	//}
 
 	modelMat = Translation(Vec3( 30.0f + from.x, 30.0f + from.z, 0.0f));
 
@@ -601,28 +629,25 @@ Image GenTexture() {
 }
 Image *proctexture;
 void UpdateProcGenTexture() {
-	//if( NewProcGenTexture() ) {
-		//*proctexture = GenTexture();
-		//Log( 1, "regenerated image %ix%i\n", proctexture->w, proctexture->h );
-		//AddAsset("proctexture", proctexture );
-		//PostInitGraphics();
-	//}
 	for( GenMap::iterator i = gGenerators.begin(); i != gGenerators.end(); ++i ) {
 		i->second->Update();	
 	}
 }
 
-LuaGenerator * AddSceneGenerator( const char *guessName ) {
+LuaGenerator * AddSceneGenerator( const char *guessName, const char * params ) {
 	LuaGenerator *lg = 0;
 	if( gGenerators.count( guessName ) == 0 ) {
 		char filename[128];
 		lg = new LuaGenerator;
 		sprintf( filename, "data/procscene-%s.lua", guessName );
 		lg->Load( filename );
-		lg->GenScene();
+		lg->GenScene(params);
 		gGenerators[lg->GetScriptName()] = lg;
 	} else {
 		lg = gGenerators[guessName];
+		if( params && lg->paramScenes.count( params ) == 0 ) {
+			lg->GenScene(params);
+		}
 	}
 	return lg;
 }
@@ -662,8 +687,7 @@ LuaGenerator * AddTextureGenerator( const char *guessName ) {
 void GameInit() {
 	NewProcGenTexture();
 
-	//AddSceneGenerator( "s_test" );
-	AddSceneGenerator( "tree" );
+	gRootScene = AddSceneGenerator( "s_test" );
 
 	AddMeshGenerator( "test" );
 	AddTextureGenerator( "grass" );
