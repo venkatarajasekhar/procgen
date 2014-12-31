@@ -2,6 +2,8 @@ function ScriptName()
 	return "mess"
 end
 
+stripes = 4
+
 function GetStripes( x, y, xr, yr )
 	a = (x % xr) / xr
 	if a > 0.5 then
@@ -23,7 +25,7 @@ end
 
 
 function GetStripey( x, y )
-	c = GetStripes( x, y, 60, 67 )
+	c = GetStripes( x, y, 256/stripes, 256/stripes )
 	if c > 0.5 then
 		return 255,0,255,255
 	else

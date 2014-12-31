@@ -2,6 +2,9 @@ function ScriptName()
 	return "checker"
 end
 
+xstripes = 60
+ystripes = 67
+
 function GetStripes( x, y, xr, yr )
 	a = (x % xr) / xr
 	if a > 0.5 then
@@ -23,7 +26,7 @@ end
 
 
 function GetStripey( x, y )
-	c = GetStripes( x, y, 60, 67 ) * 128;
+	c = GetStripes( x, y, xstripes, ystripes ) * 128;
 	return c,c,c,255;
 end
 

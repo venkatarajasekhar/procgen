@@ -6,7 +6,6 @@ nodePos = { }
 nodeRot = { }
 nodeScale = { }
 sceneNodeTexture = { }
-sceneNodeParams = { }
 sceneNodeMesh = { "end" }
 seed=100
 
@@ -15,7 +14,6 @@ function Clear()
 	nodeRot = { }
 	nodeScale = { }
 	sceneNodeTexture = { }
-	sceneNodeParams = { }
 	sceneNodeMesh = { "end" }
 end
 
@@ -40,13 +38,12 @@ function copy(obj)
   return res
 end
 
-function AddNode( mesh, texture, params, pos, rot, scale )
+function AddNode( mesh, texture, pos, rot, scale )
 	current = GetSceneNodeCount() + 1
 	-- Log( "Adding node at " .. current )
 	nodePos[current] = pos
 	nodeRot[current] = rot
 	nodeScale[current] = scale
-	sceneNodeParams[current] = params
 	sceneNodeTexture[current] = texture
 	sceneNodeMesh[current] = mesh
 end
@@ -54,7 +51,6 @@ end
 function GetSceneNodePos( n ) return table.unpack(nodePos[n+1]) end
 function GetSceneNodeRotation( n ) return table.unpack(nodeRot[n+1]) end
 function GetSceneNodeScale( n ) return table.unpack(nodeScale[n+1]) end
-function GetSceneNodeParams( n ) return sceneNodeParams[n+1] end
 function GetSceneNodeMesh( n ) return sceneNodeMesh[n+1] end
 function GetSceneNodeTexture( n ) return sceneNodeTexture[n+1] end
 
@@ -119,9 +115,9 @@ function Fixup()
 	roofScale[1] = roofScale[1] * 0.5
 	roofScale[2] = roofScale[2] * 2.0
 	roofScale[3] = roofScale[3] * 2.0
-	AddNode( "cube", wallTexture, "", pos, rot, scale )
-	AddNode( "cylinder", roofTexture, "panels=3 r=1 h=1 Fixup()", roofPos, {0,0,1.57}, roofScale )
-	AddNode( "cube", doorTexture, "", doorPos, rot, doorScale )
+	AddNode( "cube", wallTexture, pos, rot, scale )
+	AddNode( "cylinder:panels=3 r=1 h=1 Fixup()", roofTexture, roofPos, {0,0,1.57}, roofScale )
+	AddNode( "cube", doorTexture, doorPos, rot, doorScale )
 end
 
 Fixup()

@@ -17,19 +17,19 @@ using namespace std;
 
 struct Scene {
 	struct Node {
-		Node( string mesh, string texture, string params, const Mat44 &orientation ) : o(orientation), m(mesh), t(texture), p(params), isScene(false) {}
-		Node( string scene, string params, const Mat44 &orientation ) : o(orientation), s(scene), p(params), isScene(true) {}
+		Node( string mesh, string texture, const Mat44 &orientation ) : o(orientation), m(mesh), t(texture), isScene(false) {}
+		Node( string scene, const Mat44 &orientation ) : o(orientation), s(scene), isScene(true) {}
 		Mat44 o;
-		string s,m,t,p;
+		string s,m,t;
 		bool isScene;
 	};
 	typedef vector<Node> NodeVec;
 	NodeVec m_nodes;
-	void PushNode( string mesh, string texture, string params, const Mat44 &orientation ) {
-		m_nodes.push_back( Node( mesh, texture, params, orientation ) );
+	void PushNode( string mesh, string texture, const Mat44 &orientation ) {
+		m_nodes.push_back( Node( mesh, texture, orientation ) );
 	}
-	void PushNode( string scene, string params, const Mat44 &orientation ) {
-		m_nodes.push_back( Node( scene, params, orientation ) );
+	void PushNode( string scene, const Mat44 &orientation ) {
+		m_nodes.push_back( Node( scene, orientation ) );
 	}
 	void Render( const Mat44 &rootTransform );
 };
@@ -37,11 +37,7 @@ struct Scene {
 struct LuaGenerator {
 	lua_State *L;
 	Scene *scene;
-	typedef map<string,Scene*> ParamScenes;
-	ParamScenes paramScenes;
 	BadMesh *mesh;
-	typedef map<string,BadMesh*> ParamMeshes;
-	ParamMeshes paramMeshes;
 	Image *texture;
 	
 	time_t lastFileTime;
@@ -92,13 +88,13 @@ struct LuaGenerator {
 				}
 			}
 			Load( m_filename );
-			if( L && ( mesh || paramMeshes.size() ) ) {
+			if( L && mesh ) {
 				GenMesh();
 			}
 			if( L && texture ) {
 				GenTexture();
 			}
-			if( L && ( scene || paramScenes.size() ) ) {
+			if( L && scene ) {
 				GenScene();
 			}
 		}
@@ -170,6 +166,8 @@ struct LuaGenerator {
 		return r;
 	}
 	void PushParams( const char *params ) {
+		if( params ) {
+			Log(3,"Pushing params <<%s>> to %x\n", params, L );
 			int r = luaL_loadbuffer( L, params, strlen( params ), "exec" );
 			if( r ) {
 				Log(3,"Lua error [%s] loading from buffer from params\n", lua_tostring(L,-1) );
@@ -184,6 +182,9 @@ struct LuaGenerator {
 					RegisterLuaFuncs( L );
 				}
 			}
+		} else {
+			Log(3,"Calling without actual params\n" );
+		}
 	}
 
 	string GetScriptName() { return GetStringFromLua( "ScriptName" ); }
@@ -201,16 +202,10 @@ struct LuaGenerator {
 	string GetNodeParams( int n ) { return GetStringFromLua( "GetSceneNodeParams", n ); }
 
 	void GenScene( const char *params = 0 ) {
-		if( params ) {
-			PushParams( params );
-		} else {
-			Log(3,"Clearing all previous generated scenes for %s", m_filename );
-			if( scene ) { delete scene; scene = 0; }
-			for( ParamScenes::iterator i = paramScenes.begin(); i != paramScenes.end(); ++i ) {
-				delete i->second;
-			}
-			paramScenes.clear();
-		}
+		Log(3,"Clearing all previous generated scenes for %s\n", m_filename );
+		if( params ) { PushParams( params ); }
+
+		if( scene ) { delete scene; scene = 0; }
 
 		int nodeCount = GetNumNodes();
 		if( nodeCount > 0 ) {
@@ -226,37 +221,24 @@ struct LuaGenerator {
 				orientation.Scale( scale );
 				string meshName = GetNodeMesh( v );
 				string textureName = GetNodeTexture( v );
-				string params = GetNodeParams( v );
 				if( textureName.size() == 0 ) {
 					// doing a scene
 					Log(3,"SceneNode Scene %s:%s\n", meshName.c_str(), textureName.c_str() );
-					s->PushNode( meshName, params, orientation );
+					s->PushNode( meshName, orientation );
 				} else {
 					// doing a mesh
 					Log(3,"SceneNode Mesh %s:%s\n", meshName.c_str(), textureName.c_str());
-					s->PushNode( meshName, textureName, params, orientation );
+					s->PushNode( meshName, textureName, orientation );
 				}
 			}
-			//mesh->UVsFromBB();
-			if( params ) {
-				paramScenes[params] = s;
-			} else {
-				scene = s;
-			}
+			scene = s;
 		}
 	}
 	void GenMesh( const char *params = 0 ) {
-		if( params ) {
-			PushParams( params );
-		} else {
-			Log(3,"Clearing all previous generated meshes for %s", m_filename );
-			if( mesh ) { delete mesh; mesh = 0; }
-			for( ParamMeshes::iterator i = paramMeshes.begin(); i != paramMeshes.end(); ++i ) {
-				delete i->second;
-			}
-			paramMeshes.clear();
-		}
+		Log(3,"Clearing all previous generated meshes for %s\n", m_filename );
+		if( params ) { PushParams( params ); }
 
+		if( mesh ) { delete mesh; mesh = 0; }
 
 		int vertCount = GetNumVerts();
 		if( vertCount > 0 ) {
@@ -267,16 +249,14 @@ struct LuaGenerator {
 				Vec2 uv = GetUV( v );
 				m->PushVNUC( vert, normal, uv );
 			}
-			//mesh->UVsFromBB();
 
-			if( params ) {
-				paramMeshes[params] = m;
-			} else {
-				mesh = m;
-			}
+			mesh = m;
 		}
 	}
-	void GenTexture() {
+	void GenTexture( const char *params = 0 ) {
+		Log(3,"Clearing all previous generated textures for %s\n", m_filename );
+		if( params ) { PushParams( params ); }
+
 		if( texture ) { delete texture; texture = 0; }
 		Image img;
 		img.w = 256;
@@ -292,32 +272,44 @@ struct LuaGenerator {
 		texture = new Image;
 		*texture = img;
 		//Log( 1, "regenerated image %ix%i\n", texture->w, texture->h );
-		AddAsset(GetScriptName(), texture );
+		if( params ) {
+			char fullName[128];
+			sprintf( fullName, "%s:%s", GetScriptName().c_str(), params );
+			AddAsset(fullName, texture );
+		} else {
+			AddAsset(GetScriptName(), texture );
+		}
 		PostInitGraphics();
 	}
 };
 
 LuaGenerator * AddSceneGenerator( const char *guessName, const char *params = 0 );
 LuaGenerator * AddMeshGenerator( const char *guessName, const char *params = 0 );
-LuaGenerator * AddTextureGenerator( const char *guessName );
+LuaGenerator * AddTextureGenerator( const char *guessName, const char *params = 0 );
 
 void Scene::Render( const Mat44 &rootTransform ) {
 	for( NodeVec::iterator i = m_nodes.begin(); i != m_nodes.end(); ++i ) {
 		Mat44 transform = i->o * rootTransform;
 		if( i->isScene ) {
 			//Log( 3, "Found scene, adding \"%s\"\n", i->s.c_str() );
-			LuaGenerator *s = AddSceneGenerator( i->s.c_str(), i->p.c_str());
-			Scene *scene = s->paramScenes[i->p];
-			scene->Render( transform );
+			if( LuaGenerator *s = AddSceneGenerator( i->s.c_str() ) ) {
+				if ( Scene *scene = s->scene ) {
+					scene->Render( transform );
+				} else {
+					Log( 3, "Failed to find scene \"%s\"\n", i->s.c_str() );
+				}
+			} else {
+				Log( 3, "Failed to load scene \"%s\"\n", i->s.c_str() );
+			}
 		} else {
-			LuaGenerator *m = AddMeshGenerator(i->m.c_str(), i->p.c_str());
-			AddTextureGenerator(i->t.c_str());
+			if( LuaGenerator *m = AddMeshGenerator(i->m.c_str() ) ) {
+				AddTextureGenerator(i->t.c_str());
 
-			SetTexture( i->t.c_str(), 0 );
-			SetModel( transform );
-			BadMesh *bm = m->paramMeshes[i->p];
-			if( bm ) {
-				bm->DrawTriangles();
+				SetTexture( i->t.c_str(), 0 );
+				SetModel( transform );
+				if( BadMesh *bm = m->mesh ) {
+					bm->DrawTriangles();
+				}
 			}
 		}
 	}
@@ -635,50 +627,72 @@ void UpdateProcGenTexture() {
 }
 
 LuaGenerator * AddSceneGenerator( const char *guessName, const char * params ) {
+	char name[128];
+	char args[128]; args[0] = 0;
+	strcpy( name, guessName );
+	if( char *mid = strchr( name, ':' ) ) {
+		strcpy( args, mid+1 );
+		*mid = 0;
+		params = args;
+		//guessName = name;
+	}
 	LuaGenerator *lg = 0;
 	if( gGenerators.count( guessName ) == 0 ) {
 		char filename[128];
 		lg = new LuaGenerator;
-		sprintf( filename, "data/procscene-%s.lua", guessName );
+		sprintf( filename, "data/procscene-%s.lua", name );
 		lg->Load( filename );
 		lg->GenScene(params);
-		gGenerators[lg->GetScriptName()] = lg;
+		//gGenerators[lg->GetScriptName()] = lg;
+		gGenerators[guessName] = lg;
 	} else {
 		lg = gGenerators[guessName];
-		if( params && lg->paramScenes.count( params ) == 0 ) {
-			lg->GenScene(params);
-		}
 	}
 	return lg;
 }
 LuaGenerator * AddMeshGenerator( const char *guessName, const char *params ) {
+	char name[128];
+	char args[128]; args[0] = 0;
+	strcpy( name, guessName );
+	if( char *mid = strchr( name, ':' ) ) {
+		strcpy( args, mid+1 );
+		*mid = 0;
+		params = args;
+	}
 	LuaGenerator *lg = 0;
 	if( gGenerators.count( guessName ) == 0 ) {
 		char filename[128];
 		lg = new LuaGenerator;
-		sprintf( filename, "data/procmesh-%s.lua", guessName );
+		sprintf( filename, "data/procmesh-%s.lua", name );
 		lg->Load( filename );
 		lg->GenMesh(params);
-		gGenerators[lg->GetScriptName()] = lg;
+		//gGenerators[lg->GetScriptName()] = lg;
+		gGenerators[guessName] = lg;
 	} else {
 		lg = gGenerators[guessName];
-		if( params && lg->paramMeshes.count( params ) == 0 ) {
-			lg->GenMesh(params);
-		}
 	}
 	return lg;
 }
-LuaGenerator * AddTextureGenerator( const char *guessName ) {
+LuaGenerator * AddTextureGenerator( const char *guessName, const char *params ) {
+	char name[128];
+	char args[128]; args[0] = 0;
+	strcpy( name, guessName );
+	if( char *mid = strchr( name, ':' ) ) {
+		strcpy( args, mid+1 );
+		*mid = 0;
+		params = args;
+		//guessName = name;
+	}
 	LuaGenerator *lg = 0;
 	if( gGenerators.count( guessName ) == 0 ) {
 		char filename[128];
 		lg = new LuaGenerator;
-		sprintf( filename, "data/proctexture-%s.lua", guessName );
+		sprintf( filename, "data/proctexture-%s.lua", name );
 		lg->Load( filename );
-		lg->GenTexture();
+		lg->GenTexture(params);
 		string scriptName = lg->GetScriptName();
-		Log( 1, "registering texture generator %s\n", scriptName.c_str() );
-		gGenerators[lg->GetScriptName()] = lg;
+		Log( 1, "registering texture generator %s at %s because params (%s)\n", scriptName.c_str(), guessName, params?params:"<NULL>" );
+		gGenerators[guessName] = lg;
 	} else {
 		lg = gGenerators[guessName];
 	}
