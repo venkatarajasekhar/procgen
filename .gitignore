@@ -1,3 +1,4 @@
+*.swp
 build
 lua/*.o
 lua/lua.a

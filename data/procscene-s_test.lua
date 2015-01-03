@@ -80,6 +80,8 @@ function Fixup()
 	TestShapes()
 	LandAndTrees()
 	AddScene( "house:wallTexture=\"checker\" Fixup()", {0,2,8}, {0,-2,0}, {1,1,1} )
+	s = {0.1,0.1,0.1}
+	AddNode( "banana", "bananaskin", {0,2,-12}, {0,0,3.142/2}, {1,1,1} )
 end
 
 Fixup()

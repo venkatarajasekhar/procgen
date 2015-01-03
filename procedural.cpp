@@ -89,12 +89,15 @@ struct LuaGenerator {
 			}
 			Load( m_filename );
 			if( L && mesh ) {
+				Log(3,"regenerating basic mesh\n" );
 				GenMesh();
 			}
 			if( L && texture ) {
+				Log(3,"regenerating basic texture\n" );
 				GenTexture();
 			}
 			if( L && scene ) {
+				Log(3,"regenerating basic scene\n" );
 				GenScene();
 			}
 		}
@@ -241,7 +244,7 @@ struct LuaGenerator {
 		if( mesh ) { delete mesh; mesh = 0; }
 
 		int vertCount = GetNumVerts();
-		if( vertCount > 0 ) {
+		//if( vertCount > 0 ) {
 			BadMesh *m = new BadMesh();
 			for( int v = 0; v < vertCount; ++v ) {
 				Vec3 vert = GetVert( v );
@@ -251,7 +254,7 @@ struct LuaGenerator {
 			}
 
 			mesh = m;
-		}
+		//}
 	}
 	void GenTexture( const char *params = 0 ) {
 		Log(3,"Clearing all previous generated textures for %s\n", m_filename );
@@ -330,7 +333,7 @@ void GameUpdate() {
 	UpdateProcGenTexture();
 	glUniform1f(DefaultShaderProgram.timeLocation, g_fGameTime);
 	double drawStart = glfwGetTime();
-	const float yAngle = 0.01f * drawStart;
+	const float yAngle = 0.1f * drawStart;
 	const float xAngle = 0.4f;
 	float sy = sin( yAngle );
 	float cy = cos( yAngle );
