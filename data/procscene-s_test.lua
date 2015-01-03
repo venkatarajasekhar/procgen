@@ -76,10 +76,25 @@ function LandAndTrees()
 	AddScene( "terrain", {0,-2,0}, {0,0,0}, {4,2,4} )
 end
 
+function Village()
+	points = 7
+	for i=0,points-1 do
+		rad = 2
+		x = Sin(i*6.284/points) * rad
+		y = Cos(i) * rad
+		AddScene( "house:wallTexture=\"checker\" Fixup()", {2+x,2,7+y}, {0,0,0}, {0.2,0.2,0.2} )
+	end
+	--for i=0,4 do
+		--for j=0,4 do
+			--AddScene( "house:wallTexture=\"checker\" Fixup()", {0+i,2,5+j}, {0,0,0}, {0.2,0.2,0.2} )
+		--end
+	--end
+end
+
 function Fixup()
 	TestShapes()
 	LandAndTrees()
-	AddScene( "house:wallTexture=\"checker\" Fixup()", {0,2,8}, {0,-2,0}, {1,1,1} )
+	Village()
 	s = {0.1,0.1,0.1}
 	AddNode( "banana", "bananaskin", {0,2,-12}, {0,0,3.142/2}, {1,1,1} )
 end
