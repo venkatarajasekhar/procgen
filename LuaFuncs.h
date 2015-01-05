@@ -90,6 +90,11 @@ static int l_Sqrt( lua_State *L ) {
 	lua_pushnumber(L, sqrtf(x));  /* push result */
 	return 1;  /* number of results */
 }
+static int l_GetTime( lua_State *L ) {
+	double drawStart = glfwGetTime();
+	lua_pushnumber(L, drawStart);  /* push result */
+	return 1;  /* number of results */
+}
 
 #include "core/geom.h"
 #include <vector>
@@ -134,11 +139,11 @@ static int l_Transform( lua_State *L ) {
 	float y = (float)lua_tonumber(L, 2);  /* get argument */
 	float z = (float)lua_tonumber(L, 3);  /* get argument */
 	Vec4 r = gCurrentMatrix * Vec4( x, y, z, 1 );
-	Log(3, "Convert %f,%f,%f -> %f,%f,%f\n", x,y,z, r.x,r.y,r.z );
-	Log(3, "Using  %f,%f,%f,%f\n", gCurrentMatrix.x.x, gCurrentMatrix.x.y, gCurrentMatrix.x.z, gCurrentMatrix.x.w );
-	Log(3, "Using  %f,%f,%f,%f\n", gCurrentMatrix.y.x, gCurrentMatrix.y.y, gCurrentMatrix.y.z, gCurrentMatrix.y.w );
-	Log(3, "Using  %f,%f,%f,%f\n", gCurrentMatrix.z.x, gCurrentMatrix.z.y, gCurrentMatrix.z.z, gCurrentMatrix.z.w );
-	Log(3, "Using  %f,%f,%f,%f\n", gCurrentMatrix.w.x, gCurrentMatrix.w.y, gCurrentMatrix.w.z, gCurrentMatrix.w.w );
+	//Log(3, "Convert %f,%f,%f -> %f,%f,%f\n", x,y,z, r.x,r.y,r.z );
+	//Log(3, "Using  %f,%f,%f,%f\n", gCurrentMatrix.x.x, gCurrentMatrix.x.y, gCurrentMatrix.x.z, gCurrentMatrix.x.w );
+	//Log(3, "Using  %f,%f,%f,%f\n", gCurrentMatrix.y.x, gCurrentMatrix.y.y, gCurrentMatrix.y.z, gCurrentMatrix.y.w );
+	//Log(3, "Using  %f,%f,%f,%f\n", gCurrentMatrix.z.x, gCurrentMatrix.z.y, gCurrentMatrix.z.z, gCurrentMatrix.z.w );
+	//Log(3, "Using  %f,%f,%f,%f\n", gCurrentMatrix.w.x, gCurrentMatrix.w.y, gCurrentMatrix.w.z, gCurrentMatrix.w.w );
 	lua_pushnumber(L, r.x);  /* push result */
 	lua_pushnumber(L, r.y);  /* push result */
 	lua_pushnumber(L, r.z);  /* push result */
@@ -156,6 +161,7 @@ static void RegisterLuaFuncs( lua_State *L ) {
 	lua_pushcfunction(L, l_Tan); lua_setglobal(L, "Tan");
 	lua_pushcfunction(L, l_ATan2); lua_setglobal(L, "ATan2");
 	lua_pushcfunction(L, l_Sqrt); lua_setglobal(L, "Sqrt");
+	lua_pushcfunction(L, l_GetTime); lua_setglobal(L, "GetTime");
 
 	lua_pushcfunction(L, l_Identity ); lua_setglobal( L, "Identity" );
 	lua_pushcfunction(L, l_Push ); lua_setglobal( L, "Push" );

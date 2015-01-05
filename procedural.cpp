@@ -19,12 +19,18 @@ struct Scene {
 	struct Node {
 		Node( string mesh, string texture, const Mat44 &orientation ) : o(orientation), m(mesh), t(texture), isScene(false) {}
 		Node( string scene, const Mat44 &orientation ) : o(orientation), s(scene), isScene(true) {}
+		Node( string mesh, string texture, string orientation_function ) : m(mesh), t(texture), o_func(orientation_function), isScene(false) {}
 		Mat44 o;
 		string s,m,t;
+		string o_func;
 		bool isScene;
+		Mat44 GetOrientation();
 	};
 	typedef vector<Node> NodeVec;
 	NodeVec m_nodes;
+	void PushNode( string mesh, string texture, string orientationFunction ) {
+		m_nodes.push_back( Node( mesh, texture, orientationFunction ) );
+	}
 	void PushNode( string mesh, string texture, const Mat44 &orientation ) {
 		m_nodes.push_back( Node( mesh, texture, orientation ) );
 	}
@@ -111,7 +117,16 @@ struct LuaGenerator {
 #define L_CALLRETURNSTRING( IN, OUT ) L_ARGSINOUT( IN, OUT ); L_CALL(); CHECK_ERROR( retval, "" )
 #define L_CALLRETURNTHIS( IN, OUT, RET ) L_ARGSINOUT( IN, OUT ); L_CALL(); CHECK_ERROR( retval, RET )
 #define L_RETVAL(X) lua_tonumber(L, X)
+	bool FunctionExists( const char *functionName ) {
+		if( !L ) return false;
+		L_GETGLOBAL( functionName );
+		int result = lua_isfunction(L, -1);
+		lua_pop(L, 1);
+		//Log(3,"Checking for %s -> %i\n", functionName, result );
+		return result != 0;
+	}
 	int GetIntFromLua( const char *functionName ) {
+		if( !FunctionExists( functionName ) ) return 0;
 		L_GETGLOBAL( functionName );
 		L_CALLRETURNNUMBER( 0, 1 );
 		double count = L_RETVAL(1);
@@ -119,6 +134,7 @@ struct LuaGenerator {
 		return (int)count;
 	}
 	Vec3 GetVec3FromLua( const char *functionName, int vindex, Vec3 defaultValue = gZeroVec3 ) {
+		if( !FunctionExists( functionName ) ) return gZeroVec3;
 		L_GETGLOBAL( functionName );
 		L_PUSHNUM( vindex );
 		L_CALLRETURNTHIS( 1, 3, defaultValue );
@@ -129,6 +145,7 @@ struct LuaGenerator {
 		return Vec3( x, y, z );
 	}
 	Vec2 GetVec2FromLua( const char *functionName, int vindex ) {
+		if( !FunctionExists( functionName ) ) return Vec2(0,0);
 		L_GETGLOBAL( functionName );
 		L_PUSHNUM( vindex );
 		L_CALLRETURNNUMBER( 1, 2 );
@@ -137,7 +154,22 @@ struct LuaGenerator {
 		lua_pop(L,args_out);
 		return Vec2( x, y );
 	}
+	Mat44 GetMat44FromLua( const char *functionName ) {
+		if( !FunctionExists( functionName ) ) return gIdentityMat;
+		L_GETGLOBAL( functionName );
+		Mat44 defaultValue;
+		defaultValue.SetIdentity();
+		L_CALLRETURNTHIS( 0, 16, defaultValue );
+		float *m = defaultValue;
+		for( int i = 0; i < 16; ++i ) {
+			double val = L_RETVAL(i+1);
+			m[i] = val;
+		}
+		lua_pop(L,args_out);
+		return defaultValue;
+	}
 	C32 GetColourFromLua( const char *functionName, int x, int y ) {
+		if( !FunctionExists( functionName ) ) return 0;
 		L_GETGLOBAL( functionName );
 		L_PUSHNUM( x );
 		L_PUSHNUM( y );
@@ -151,22 +183,29 @@ struct LuaGenerator {
 		C32 value = ((int)a << 24) + ((int)b << 16) + ((int)g << 8) + (int)r;
 		return value;
 	}
-
 	string GetStringFromLua( const char *functionName ) {
+		if( !FunctionExists( functionName ) ) return "";
 		L_GETGLOBAL( functionName );
 		L_CALLRETURNSTRING( 0, 1 );
 		const char *r = lua_tostring(L, 1);
 		lua_pop(L,args_out);
-		return r;
+		if( r )
+			return r;
+		else
+			return "";
 	}
 
 	string GetStringFromLua( const char *functionName, int n ) {
+		if( !FunctionExists( functionName ) ) return "";
 		L_GETGLOBAL( functionName );
 		L_PUSHNUM( n );
 		L_CALLRETURNSTRING( 1, 1 );
 		const char *r = lua_tostring(L, 1);
 		lua_pop(L,args_out);
-		return r;
+		if( r )
+			return r;
+		else
+			return "";
 	}
 	void PushParams( const char *params ) {
 		if( params ) {
@@ -200,6 +239,7 @@ struct LuaGenerator {
 	Vec3 GetNodePos( int n ) { return GetVec3FromLua( "GetSceneNodePos", n ); }
 	Vec3 GetNodeRotation( int n ) { return GetVec3FromLua( "GetSceneNodeRotation", n ); }
 	Vec3 GetNodeScale( int n ) { return GetVec3FromLua( "GetSceneNodeScale", n); }
+	string GetNodeOrientationFunction( int n ) { return GetStringFromLua( "GetSceneNodeOrientation", n ); }
 	string GetNodeMesh( int n ) { return GetStringFromLua( "GetSceneNodeMesh", n ); }
 	string GetNodeTexture( int n ) { return GetStringFromLua( "GetSceneNodeTexture", n ); }
 	string GetNodeParams( int n ) { return GetStringFromLua( "GetSceneNodeParams", n ); }
@@ -222,16 +262,22 @@ struct LuaGenerator {
 				orientation.Translate( pos );
 				orientation.Rotation( rotation );
 				orientation.Scale( scale );
+				string orientationFunction = GetNodeOrientationFunction( v );
 				string meshName = GetNodeMesh( v );
 				string textureName = GetNodeTexture( v );
-				if( textureName.size() == 0 ) {
-					// doing a scene
-					Log(3,"SceneNode Scene %s:%s\n", meshName.c_str(), textureName.c_str() );
-					s->PushNode( meshName, orientation );
+				if( orientationFunction.size() ) {
+					Log(3,"SceneNode AnimMesh %s:%s @ %s\n", meshName.c_str(), textureName.c_str(), orientationFunction.c_str());
+					s->PushNode( meshName, textureName, orientationFunction );
 				} else {
-					// doing a mesh
-					Log(3,"SceneNode Mesh %s:%s\n", meshName.c_str(), textureName.c_str());
-					s->PushNode( meshName, textureName, orientation );
+					if( textureName.size() == 0 ) {
+						// doing a scene
+						Log(3,"SceneNode Scene %s:%s\n", meshName.c_str(), textureName.c_str() );
+						s->PushNode( meshName, orientation );
+					} else {
+						// doing a mesh
+						Log(3,"SceneNode Mesh %s:%s\n", meshName.c_str(), textureName.c_str());
+						s->PushNode( meshName, textureName, orientation );
+					}
 				}
 			}
 			scene = s;
@@ -290,17 +336,31 @@ LuaGenerator * AddSceneGenerator( const char *guessName, const char *params = 0 
 LuaGenerator * AddMeshGenerator( const char *guessName, const char *params = 0 );
 LuaGenerator * AddTextureGenerator( const char *guessName, const char *params = 0 );
 
+LuaGenerator *gCurrentRenderGenerator;
+Mat44 Scene::Node::GetOrientation() {
+	if( o_func.size() ) {
+		if( gCurrentRenderGenerator ) {
+			o = gCurrentRenderGenerator->GetMat44FromLua( o_func.c_str() );
+		}
+	}
+	return o;
+}
+
 void Scene::Render( const Mat44 &rootTransform ) {
 	for( NodeVec::iterator i = m_nodes.begin(); i != m_nodes.end(); ++i ) {
-		Mat44 transform = i->o * rootTransform;
+		Mat44 o = i->GetOrientation();
+		Mat44 transform = o * rootTransform;
 		if( i->isScene ) {
 			//Log( 3, "Found scene, adding \"%s\"\n", i->s.c_str() );
 			if( LuaGenerator *s = AddSceneGenerator( i->s.c_str() ) ) {
+				LuaGenerator *old = gCurrentRenderGenerator;
+				gCurrentRenderGenerator = s;
 				if ( Scene *scene = s->scene ) {
 					scene->Render( transform );
 				} else {
 					Log( 3, "Failed to find scene \"%s\"\n", i->s.c_str() );
 				}
+				gCurrentRenderGenerator = old;
 			} else {
 				Log( 3, "Failed to load scene \"%s\"\n", i->s.c_str() );
 			}
@@ -333,7 +393,7 @@ void GameUpdate() {
 	UpdateProcGenTexture();
 	glUniform1f(DefaultShaderProgram.timeLocation, g_fGameTime);
 	double drawStart = glfwGetTime();
-	const float yAngle = 0.1f * drawStart;
+	const float yAngle = 0.01f * drawStart;
 	const float xAngle = 0.4f;
 	float sy = sin( yAngle );
 	float cy = cos( yAngle );
@@ -373,7 +433,9 @@ void GameUpdate() {
 	SetModel( modelMat );
 	
 	if( gRootScene ) {
+		gCurrentRenderGenerator = gRootScene;
 		gRootScene->scene->Render(gIdentityMat);
+		gCurrentRenderGenerator = 0;
 	}
 	//for( GenMap::iterator i = gGenerators.begin(); i != gGenerators.end(); ++i ) {
 	//	if( i->second->scene ) {
