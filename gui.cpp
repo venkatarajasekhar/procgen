@@ -200,7 +200,7 @@ void InitGUI() {
 void UpdateGUI() {
 	UpdateImGui();
 
-#if 1
+#if 0
 	static bool show_test_window = false;
 	static bool show_another_window = false;
 
