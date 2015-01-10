@@ -29,8 +29,6 @@ float o = 1.0f;
 float O = 1.01f;
 
 #include "assetloader.h"
-extern int win_width;
-extern int win_height;
 
 GLuint textureLocation;
 typedef std::string Key;

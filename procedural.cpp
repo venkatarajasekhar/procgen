@@ -13,6 +13,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include "gui.h"
 using namespace std;
 
 struct Scene {
@@ -393,7 +394,7 @@ void GameUpdate() {
 	UpdateProcGenTexture();
 	glUniform1f(DefaultShaderProgram.timeLocation, g_fGameTime);
 	double drawStart = glfwGetTime();
-	const float yAngle = 0.01f * drawStart;
+	const float yAngle = 0.1f * drawStart;
 	const float xAngle = 0.4f;
 	float sy = sin( yAngle );
 	float cy = cos( yAngle );
@@ -470,6 +471,7 @@ void GameUpdate() {
 	modelMat = Translation(Vec3( 0.0f,0.0f,0.0f ));
 	modelMat.Scale(1.0f);
 	FontPrint( modelMat, "Testing No VAR Water Kerning MMennwwWW" );
+	UpdateGUI();
 }
 
 // lua stuff
@@ -789,6 +791,7 @@ void GameInit() {
 	cube = new BadMesh();
 	cube->SetAsCube();
 	cube->UVsFromBB();
+	InitGUI();
 }
 void GameShutdown() {
 }

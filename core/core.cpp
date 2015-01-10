@@ -10,6 +10,7 @@
 #include <map>
 #include <string>
 #include "util.h"
+#include "core.h"
 
 #define SIMPLE_PROFILING 0
 
@@ -98,6 +99,15 @@ void update( double ) {
 }
 
 Vec2 gControlVec;
+
+KeyCB gKeyCallback;
+void SetKeyboardCallback( KeyCB callback ) {
+	gKeyCallback = callback;
+}
+void characterCB( int symbol, int state ) {
+	if( gKeyCallback )
+		gKeyCallback(symbol,state);
+}
 
 void controlCB( int symbol, int state ) {
 	if( symbol == GLFW_KEY_SPACE ) {
@@ -245,6 +255,7 @@ int main( int argc, char *argv[] ) {
 
 	glfwGetMousePos( &initialmousex, &initialmousey );
 	glfwSetKeyCallback( controlCB );
+	glfwSetCharCallback( characterCB );
 	//glfwSetMouseButtonCallback( mouseButtonCB );
 	//glfwSetMouseWheelCallback( mouseWheelCB );
 	glfwSwapInterval(1);

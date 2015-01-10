@@ -11,7 +11,7 @@ LIBS=-Wl,-Bsymbolic-functions \
 	-rdynamic -lrt -lpthread \
 	-lGL -lglfw
 
-RAW_COMMONOBJECTS=GameTextures.o GameMeshes.o
+RAW_COMMONOBJECTS=GameTextures.o GameMeshes.o gui.o
 RAW_PROCEDURALOBJECTS=
 RAW_TARGETOBJECTS=$(TARGETS:%=%.o)
 COMMONOBJECTS=$(RAW_COMMONOBJECTS:%=build/%)
@@ -20,10 +20,12 @@ TARGETOBJECTS=$(RAW_TARGETOBJECTS:%=build/%)
 ALLOBJECTS=$(COMMONOBJECTS) $(TARGETOBJECTS) $(PROCEDURALOBJECTS)
 CORE=core/core.a
 LUA=lua/lua.a
+IMGUI=imgui/imgui.a
 
 recurse:
 	@make -j$(shell getconf _NPROCESSORS_ONLN) -C core all
 	@make -j$(shell getconf _NPROCESSORS_ONLN) -C lua all
+	@make -j$(shell getconf _NPROCESSORS_ONLN) -C imgui all
 	@make -j$(shell getconf _NPROCESSORS_ONLN) all
 
 all: $(TARGETS)
@@ -37,6 +39,7 @@ build:
 clean:
 	@make -C core clean
 	@make -C lua clean
+	@make -C imgui clean
 	rm -f $(TARGETS)
 	rm -f build/*
 
@@ -46,8 +49,8 @@ build/%.o: %.cpp | build
 	sed -i '1s/^/build\//' build/$*.d
 
 # testing
-procedural: build/procedural.o $(COMMONOBJECTS) $(PROCEDURALOBJECTS) $(CORE) $(LUA)
-	$(CC) build/procedural.o $(COMMONOBJECTS) $(PROCEDURALOBJECTS) $(CORE) $(LUA) -o procedural $(LIBS)
+procedural: build/procedural.o $(COMMONOBJECTS) $(PROCEDURALOBJECTS) $(CORE) $(LUA) $(IMGUI)
+	$(CC) build/procedural.o $(COMMONOBJECTS) $(PROCEDURALOBJECTS) $(CORE) $(LUA) $(IMGUI) -o procedural $(LIBS)
 
 compilers: basepackages
 

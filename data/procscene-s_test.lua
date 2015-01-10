@@ -127,13 +127,13 @@ function BananaAnim()
 end
 function Fixup()
 	TestShapes()
-	LandAndTrees()
-	Village()
+	--LandAndTrees()
+	--Village()
 	--s = {0.1,0.1,0.1}
 	--AddNode( "lathe", "checker", {0,2,-12}, {0,0,3.142/2}, {1,1,1} )
 	--AddNode( "banana", "bananaskin", {0,2,-12}, {0,0,3.142/2}, {1,1,1} )
-	AddAnimNode( "banana", "bananaskin", "BananaAnim" )
-	AddAnimNode( "cube", "checker", "CubeAnim" )
+	--AddAnimNode( "banana", "bananaskin", "BananaAnim" )
+	--AddAnimNode( "cube", "checker", "CubeAnim" )
 end
 
 Fixup()

@@ -20,7 +20,7 @@ function GetMeshVertCount()
 	return vertcount
 end
 
-function GetCubeV( vert )
+function GetCylinderV( vert )
 	perPanelTheta = 6.284/panels
 	if vert < capverts then
 		currentH = h
@@ -42,7 +42,7 @@ function GetCubeV( vert )
 		if vert%3 < 0.5 then
 			x,z = 0,0
 		end
-		Log( "GetCubeV("..vert.."),"..h.." t"..theta.." s"..seg.." -> "..x..","..y..","..z )
+		--Log( "GetCylinderV("..vert.."),"..h.." t"..theta.." s"..seg.." -> "..x..","..y..","..z )
 		return x, y, z
 	else
 		vert = vert - capverts
@@ -72,7 +72,7 @@ function GetCubeV( vert )
 end
 function GetMeshVert( vert )
 	--Log( "vert count " .. vertcount)
-	x, y, z = GetCubeV( vert )
+	x, y, z = GetCylinderV( vert )
 	return x,y,z
 	--return 10*xs[vi], 10*ys[vi], 0
 end
