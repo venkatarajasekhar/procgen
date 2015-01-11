@@ -18,13 +18,16 @@ using namespace std;
 
 struct Scene {
 	struct Node {
-		Node( string mesh, string texture, const Mat44 &orientation ) : o(orientation), m(mesh), t(texture), isScene(false) {}
-		Node( string scene, const Mat44 &orientation ) : o(orientation), s(scene), isScene(true) {}
-		Node( string mesh, string texture, string orientation_function ) : m(mesh), t(texture), o_func(orientation_function), isScene(false) {}
+		Node( string mesh, string texture, const Mat44 &orientation ) : o(orientation), m(mesh), t(texture), isScene(false), isCamera(false) {}
+		Node( string scene, const Mat44 &orientation ) : o(orientation), s(scene), isScene(true), isCamera(false) {}
+		Node( string mesh, string texture, string orientation_function ) : m(mesh), t(texture), o_func(orientation_function), isScene(false), isCamera(false) {}
+		Node( const Mat44 &orientation ) : o(orientation), isScene(false), isCamera(true) {}
+		Node( string orientation_function ) : o_func(orientation_function), isScene(false), isCamera(true) {}
 		Mat44 o;
 		string s,m,t;
 		string o_func;
 		bool isScene;
+		bool isCamera;
 		Mat44 GetOrientation();
 	};
 	typedef vector<Node> NodeVec;
@@ -37,6 +40,12 @@ struct Scene {
 	}
 	void PushNode( string scene, const Mat44 &orientation ) {
 		m_nodes.push_back( Node( scene, orientation ) );
+	}
+	void PushNode( string orientationFunction ) {
+		m_nodes.push_back( Node( orientationFunction ) );
+	}
+	void PushNode( const Mat44 &orientation ) {
+		m_nodes.push_back( Node( orientation ) );
 	}
 	void Render( const Mat44 &rootTransform );
 };
@@ -268,16 +277,27 @@ struct LuaGenerator {
 				string textureName = GetNodeTexture( v );
 				if( orientationFunction.size() ) {
 					Log(3,"SceneNode AnimMesh %s:%s @ %s\n", meshName.c_str(), textureName.c_str(), orientationFunction.c_str());
-					s->PushNode( meshName, textureName, orientationFunction );
-				} else {
-					if( textureName.size() == 0 ) {
-						// doing a scene
-						Log(3,"SceneNode Scene %s:%s\n", meshName.c_str(), textureName.c_str() );
-						s->PushNode( meshName, orientation );
+					if( meshName.size() == 0 ) {
+						// camera
+						s->PushNode( orientationFunction );
 					} else {
-						// doing a mesh
-						Log(3,"SceneNode Mesh %s:%s\n", meshName.c_str(), textureName.c_str());
-						s->PushNode( meshName, textureName, orientation );
+						s->PushNode( meshName, textureName, orientationFunction );
+					}
+				} else {
+					if( meshName.size() == 0 ) {
+						// doing a camera
+						Log(3,"SceneNode Camera\n");
+						s->PushNode( orientation );
+					} else {
+						if( textureName.size() == 0 ) {
+							// doing a scene
+							Log(3,"SceneNode Scene %s:%s\n", meshName.c_str(), textureName.c_str() );
+							s->PushNode( meshName, orientation );
+						} else {
+							// doing a mesh
+							Log(3,"SceneNode Mesh %s:%s\n", meshName.c_str(), textureName.c_str());
+							s->PushNode( meshName, textureName, orientation );
+						}
 					}
 				}
 			}
@@ -366,13 +386,18 @@ void Scene::Render( const Mat44 &rootTransform ) {
 				Log( 3, "Failed to load scene \"%s\"\n", i->s.c_str() );
 			}
 		} else {
-			if( LuaGenerator *m = AddMeshGenerator(i->m.c_str() ) ) {
-				AddTextureGenerator(i->t.c_str());
+			if( i->isCamera ) {
+				Mat44 invCam = transform.Inverse();
+				SetCamera( invCam );
+			} else {
+				if( LuaGenerator *m = AddMeshGenerator(i->m.c_str() ) ) {
+					AddTextureGenerator(i->t.c_str());
 
-				SetTexture( i->t.c_str(), 0 );
-				SetModel( transform );
-				if( BadMesh *bm = m->mesh ) {
-					bm->DrawTriangles();
+					SetTexture( i->t.c_str(), 0 );
+					SetModel( transform );
+					if( BadMesh *bm = m->mesh ) {
+						bm->DrawTriangles();
+					}
 				}
 			}
 		}

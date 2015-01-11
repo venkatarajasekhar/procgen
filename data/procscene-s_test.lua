@@ -70,6 +70,25 @@ function AddScene( scene, pos, rot, scale )
 	sceneNodeTexture[current] = ""
 	sceneNodeMesh[current] = scene
 end
+function AddCamera( pos, rot, scale )
+	current = GetSceneNodeCount() + 1
+	sceneNodePos[current] = pos
+	sceneNodeRotation[current] = rot
+	sceneNodeScale[current] = scale
+	sceneNodeTexture[current] = ""
+	sceneNodeMesh[current] = ""
+end
+function AddAnimCamera( orientationFunction )
+	current = GetSceneNodeCount() + 1
+	-- Log( "Adding node at " .. current )
+	sceneNodePos[current] = {0,0,0}
+	sceneNodeRotation[current] = {0,0,0}
+	sceneNodeScale[current] = {1,1,1}
+	sceneNodeTexture[current] = ""
+	sceneNodeMesh[current] = ""
+	sceneNodeOrientation[current] = orientationFunction
+end
+
 
 function TestShapes()
 	AddNode( "cylinder:panels=7 r=1 h=1 Fixup()", "sand", { 0,0,8 }, { 0,0,0 }, { 4,1,4 } )
@@ -125,7 +144,21 @@ function BananaAnim()
 	z = ct * rad
 	return 0,1,0,0, ct,0,-st,0, st,0,ct,0, x,y,z,1
 end
+function CameraAnim()
+	theta = 0.5 * GetTime()
+	rad = 12
+	st = Sin(theta)
+	ct = Cos(theta)
+	x = st * rad
+	y = 2
+	z = ct * rad
+	--return 0,1,0,0, ct,0,-st,0, st,0,ct,0, x,y,z,1
+	return ct,0,-st,0, 0,1,0,0, st,0,ct,0, x,y,z,1
+end
 function Fixup()
+	--TestShapes()
+	--AddCamera( {20,3,-0}, {0,0.5*3.124,0}, {1,1,1} )
+	AddAnimCamera( "CameraAnim" )
 	TestShapes()
 	--LandAndTrees()
 	--Village()

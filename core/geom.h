@@ -93,6 +93,8 @@ struct Mat44 {
 	Mat44 RotPart() { return Mat44( x,y,z, Vec4(0,0,0,1) ); }
 	void SetIdentity() { *this = Mat44( Vec4(1,0,0,0), Vec4(0,1,0,0), Vec4(0,0,1,0), Vec4(0,0,0,1) ); }
 	void Translate(const Vec3 v) { w = Vec4(v+w); }
+	Mat44 Inverse() const;
+	float Determinant() const;
 	void Rotation(float rotation, const Vec3 axis) {
 		const float c = cos(rotation), s = sin(rotation);
 		const float X = axis.x, Y = axis.y, Z = axis.z;
