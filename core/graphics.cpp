@@ -14,7 +14,6 @@
 bool gWireframeMode = false;
 Vec3 gCamPos( 0, 1, 2 );
 Vec3 gCamAim(0,0,0);
-extern int win_width, win_height;
 
 #define CATCH_GL_ERROR( WHAT ) do { if( int error = glGetError() ) printf( "%s %i %s (%i)\n", __FILE__, __LINE__, WHAT, error ); } while(0)
 
@@ -93,6 +92,17 @@ void SetTexture(const char* pName, int slotID) {
 	} else {
 		SetTexture(g_nSmallWhiteTexture, slotID);
 	}
+}
+void SetDefaultViewport() {
+	SetViewport( Vec2(0,0), Vec2(1,1) );
+	glDisable( GL_SCISSOR_TEST );
+}
+void SetViewport(const Vec2 &topleft, const Vec2& bottomright) {
+	Vec2 bl( topleft.x, 1.0f - bottomright.y );
+	Vec2 wh = bottomright - topleft;
+	glViewport( bl.x * win_width, bl.y * win_height, wh.x * win_width, wh.y * win_height );
+	glScissor( bl.x * win_width, bl.y * win_height, wh.x * win_width, wh.y * win_height );
+	glEnable( GL_SCISSOR_TEST );
 }
 
 static char s_szTemp[1024];

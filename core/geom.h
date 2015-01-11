@@ -11,11 +11,11 @@ struct Vec2 {
 	Vec2() {x = 0.0f; y = 0.0f;}
 	Vec2 operator+(const Vec2 &other) const { return Vec2(x+other.x, y+other.y); }
 	Vec2 operator-(const Vec2 &other) const { return Vec2(x-other.x, y-other.y); }
-	Vec2 operator*(const float &other) const { return Vec2(x*other, y*other); }
-	Vec2 operator/(const float &other) const { return Vec2(x/other, y/other); }
+	Vec2 operator*(float other) const { return Vec2(x*other, y*other); }
+	Vec2 operator/(float other) const { return Vec2(x/other, y/other); }
 	Vec2& operator+=(const Vec2 &other) { x+=other.x; y+=other.y; return *this; }
 	Vec2& operator-=(const Vec2 &other) { x-=other.x; y-=other.y; return *this; }
-	Vec2& operator*=(const float &other) { *this = Vec2(x*other, y*other); return *this; }
+	Vec2& operator*=(float other) { *this = Vec2(x*other, y*other); return *this; }
 	float dot(const Vec2 &other) const { return x*other.x + y*other.y;}
 	float cross(const Vec2 &other) const { return x*other.y - y*other.x;}
 	float abs() const { return sqrtf(dot(*this)); }

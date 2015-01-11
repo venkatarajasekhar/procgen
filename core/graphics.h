@@ -28,6 +28,8 @@ typedef float F32;
 typedef uint64_t U64;
 typedef int64_t S64;
 
+extern int win_width, win_height;
+
 GLuint GLMemoryTexture(S32 nW, S32 nH, U32* pnImage, int bCreateMipChain, int nFormat = 0);
 
 float GLPerspectiveFactorX();
@@ -36,6 +38,7 @@ void PostInitGraphics();
 void game_on_draw( double gameTime );
 
 // tools for drawing from other drawing update functions
+struct Vec2;
 struct Vec3;
 struct Mat44;
 void ClearScreen( float r, float g, float b );
@@ -47,6 +50,8 @@ void SetModel(const Mat44 &modelTransform);
 void DrawSquare( float x, float y, float width, float height, uint32_t colour );
 void SetTexture(GLuint textureID, int slotID);
 void SetTexture(const char* pName, int slotID);
+void SetDefaultViewport();
+void SetViewport(const Vec2 &topleft, const Vec2& bottomright);
 void ClearTexture();
 #include <string>
 #include "assetloader.h"

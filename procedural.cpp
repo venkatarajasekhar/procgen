@@ -428,6 +428,7 @@ void GameUpdate() {
 	const float dist = 20.0f;
 	from = Vec3( cx * sy * dist, sx * dist, cx * cy * dist );
 
+	SetDefaultViewport();
 	DefaultOrtho();
 	SetCamera(gIdentityMat);
 	glDepthFunc(GL_LEQUAL);
@@ -458,11 +459,17 @@ void GameUpdate() {
 	modelMat.Scale(2.0f);
 	SetModel( modelMat );
 	
+	float xborder = 32.0f / win_width;
+	float yborder = 32.0f / win_height;
+	SetViewport( Vec2(xborder,yborder), Vec2(1.0f-xborder,1.0f-yborder) );
+	ClearScreen( 0.5f, 0.5f, 0.5f );
+
 	if( gRootScene ) {
 		gCurrentRenderGenerator = gRootScene;
 		gRootScene->scene->Render(gIdentityMat);
 		gCurrentRenderGenerator = 0;
 	}
+	SetDefaultViewport();
 	//for( GenMap::iterator i = gGenerators.begin(); i != gGenerators.end(); ++i ) {
 	//	if( i->second->scene ) {
 	//		i->second->scene->Render(gIdentityMat);
