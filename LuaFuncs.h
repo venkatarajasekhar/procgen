@@ -90,6 +90,7 @@ static int l_Sqrt( lua_State *L ) {
 	lua_pushnumber(L, sqrtf(x));  /* push result */
 	return 1;  /* number of results */
 }
+#include "core/graphics.h"
 static int l_GetTime( lua_State *L ) {
 	double drawStart = glfwGetTime();
 	lua_pushnumber(L, drawStart);  /* push result */
