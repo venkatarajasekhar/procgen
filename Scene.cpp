@@ -67,3 +67,27 @@ void Scene::Render( const Mat44 &rootTransform ) {
 	}
 }
 
+void Scene::Update() {
+	Log( 3, "Scene::Update this=%x\n", this);
+	if( gCurrentRenderGenerator ) {
+		gCurrentRenderGenerator->CallUpdate();
+	}
+	for( NodeVec::iterator i = m_nodes.begin(); i != m_nodes.end(); ++i ) {
+		if( i->isScene ) {
+			//Log( 3, "Found scene, adding \"%s\"\n", i->s.c_str() );
+			if( LuaGenerator *s = AddSceneGenerator( i->s.c_str() ) ) {
+				LuaGenerator *old = gCurrentRenderGenerator;
+				gCurrentRenderGenerator = s;
+				if ( Scene *scene = s->scene ) {
+					scene->Update();
+				} else {
+					Log( 3, "Failed to find scene \"%s\"\n", i->s.c_str() );
+				}
+				gCurrentRenderGenerator = old;
+			} else {
+				Log( 3, "Failed to load scene \"%s\"\n", i->s.c_str() );
+			}
+		}
+	}
+}
+

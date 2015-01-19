@@ -37,6 +37,7 @@ struct LuaGenerator {
 	C32 GetColourFromLua( const char *functionName, int x, int y );
 	string GetStringFromLua( const char *functionName );
 	string GetStringFromLua( const char *functionName, int n );
+	void CallUpdate();
 	void PushParams( const char *params );
 
 	string GetScriptName() { return GetStringFromLua( "ScriptName" ); }

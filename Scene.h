@@ -28,6 +28,7 @@ struct Scene {
 	void PushNode( string orientationFunction );
 	void PushNode( const Mat44 &orientation );
 	void Render( const Mat44 &rootTransform );
+	void Update();
 };
 
 #endif

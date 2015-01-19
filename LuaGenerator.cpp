@@ -181,6 +181,14 @@ string LuaGenerator::GetStringFromLua( const char *functionName, int n ) {
 	else
 		return "";
 }
+void LuaGenerator::CallUpdate() {
+	const char *functionName = "Update";
+	if( !FunctionExists( functionName ) ) return;
+	L_GETGLOBAL( functionName );
+	L_CALLRETURNTHIS( 0, 0, );
+	lua_pop(L,args_out);
+	return;
+}
 void LuaGenerator::PushParams( const char *params ) {
 	if( params ) {
 		Log(3,"Pushing params <<%s>> to %x\n", params, L );
