@@ -14,6 +14,26 @@
 
 #define SIMPLE_PROFILING 0
 
+DoAtTime *gFirstDoAtTime;
+
+DoAtTime::DoAtTime( V_FP_V fp, const char *when ) {
+	w = when;
+	f = fp;
+	p = gFirstDoAtTime;
+	gFirstDoAtTime = this;
+}
+void DoForTime(const char *when) {
+	Log(1, "Doing : %s\n", when );
+	DoAtTime *p = gFirstDoAtTime;
+	while( p ) {
+		if( 0 == strcmp( p->w, when ) ) {
+			Log(1, "Calling : %s\n", when );
+			p->f();
+		}
+		p = p->p;
+	}
+}
+
 bool shouldExit = false;
 int closeWindowCallback( ) {
 	shouldExit = true;
@@ -207,6 +227,7 @@ void MainShutdown()
 
 float g_fScreenW, g_fScreenH;
 int main( int argc, char *argv[] ) {
+	DoForTime("preboot");
 	for( int i = 0; i < argc; ++ i ) {
 		Log( 3, "Arg %i: [%s]\n", i, argv[i] );
 	}
@@ -222,15 +243,15 @@ int main( int argc, char *argv[] ) {
 	//InitPhysics( glfwGetTime() );
 
 	// bug on mac where it can't get the desktop mode, so only get the right size for non-macs
-#ifndef __MACH__
-	GLFWvidmode return_struct;
-	glfwGetDesktopMode( &return_struct );
-	screen_height = return_struct.Height;
-	screen_width = return_struct.Width;
-
-	win_width = screen_width * 3 / 5;
-	win_height = screen_height * 3 / 5;
-#endif
+//#ifndef __MACH__
+//	GLFWvidmode return_struct;
+//	glfwGetDesktopMode( &return_struct );
+//	screen_height = return_struct.Height;
+//	screen_width = return_struct.Width;
+//
+//	win_width = screen_width * 3 / 5;
+//	win_height = screen_height * 3 / 5;
+//#endif
 	Log( 3, "Screen:Win %i,%i : %i,%i\n", screen_width, screen_height, win_width, win_height );
 
 	int bitsRGBA[] = { 8,8,8, 8 };

@@ -1,4 +1,5 @@
 #include "core/util.h"
+#include "core/core.h"
 #include "core/graphics.h"
 #include "core/Shader.h"
 #include "core/BadMesh.h"
@@ -101,6 +102,12 @@ void GameUpdate() {
 	FontPrint( modelMat, "Testing No VAR Water Kerning MMennwwWW" );
 	UpdateGUI();
 }
+
+void PreBoot() {
+	win_width = 600;
+	win_height = 400;
+}
+DO_PREBOOT(PreBoot);
 
 void GameInit() {
 	gRootScene = AddSceneGenerator( "s_test" );
