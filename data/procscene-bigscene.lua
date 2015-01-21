@@ -1,5 +1,5 @@
 function ScriptName()
-	return "s_test"
+	return "bigscene"
 end
 
 sceneNodePos = { }
