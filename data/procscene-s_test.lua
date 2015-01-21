@@ -1,7 +1,3 @@
-function ScriptName()
-	return "s_test"
-end
-
 sceneNodePos = { }
 sceneNodeRotation = { }
 sceneNodeScale = { }
@@ -156,17 +152,7 @@ function CameraAnim()
 	return ct,0,-st,0, 0,1,0,0, st,0,ct,0, x,y,z,1
 end
 function Fixup()
-	--TestShapes()
-	--AddCamera( {20,3,-0}, {0,0.5*3.124,0}, {1,1,1} )
-	AddAnimCamera( "CameraAnim" )
-	TestShapes()
-	--LandAndTrees()
-	--Village()
-	--s = {0.1,0.1,0.1}
-	--AddNode( "lathe", "checker", {0,2,-12}, {0,0,3.142/2}, {1,1,1} )
-	--AddNode( "banana", "bananaskin", {0,2,-12}, {0,0,3.142/2}, {1,1,1} )
-	--AddAnimNode( "banana", "bananaskin", "BananaAnim" )
-	--AddAnimNode( "cube", "checker", "CubeAnim" )
+	AddNode( "implicit", "checker", {0,0,0}, {0,0,0}, {1,1,1} )
 end
 
 Fixup()

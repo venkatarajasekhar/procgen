@@ -15,11 +15,9 @@ function GetMeshVert( vert ) return table.unpack(vertices[vert+1]) end
 function GetMeshNormal( vert ) return table.unpack(normals[vert+1]) end
 function GetMeshUV( vert ) return table.unpack(uvs[vert+1]) end
 
-function Warp( invert )
-	bend = invert[2] * 0.3
-	bend = bend * bend
-	outvert = {invert[1] + bend, invert[2], invert[3] }
-	return outvert
+function SurfaceFunction( x, y, z )
+	radius = 2.0
+	return x * x + y * y + z * z - radius * radius
 end
 
 function Fixup()
@@ -28,9 +26,17 @@ function Fixup()
 	normals = {}
 	uvs = {}
 
+	for z=-4,4 do
+		for y=-4,4 do
+			for x=-4,4 do
+				-- for this cell, see what the marching cube data is
+			end
+		end
+	end
+
 	if true then
 		n = { 0,1,0 }
-		radii = {0,0.2,0.8,0.9,1,1,1,0.9,0.8,0.1,0.1,0}
+		radii = {0,0.2,0.8,0.9,1,1.2,1,0.9,0.8,0.1,0.1,0}
 		p = {-4.1,-4,-3,-2,-1,0,1,2,3,4,5,5}
 		for i=-4,6 do
 			l,h = (i+4)/11,(i+5)/11
@@ -61,12 +67,12 @@ function Fixup()
 				n1h = { sa,0,ca }
 				n2h = { sb,0,cb }
 
-				AddVertex( Warp( v1l ), n1l, uv1 )
-				AddVertex( Warp( v2l ), n2l, uv2 )
-				AddVertex( Warp( v1h ), n1h, uv3 )
-				AddVertex( Warp( v1h ), n1h, uv3 )
-				AddVertex( Warp( v2l ), n2l, uv2 )
-				AddVertex( Warp( v2h ), n2h, uv4 )
+				AddVertex( v1l, n1l, uv1 )
+				AddVertex( v2l, n2l, uv2 )
+				AddVertex( v1h, n1h, uv3 )
+				AddVertex( v1h, n1h, uv3 )
+				AddVertex( v2l, n2l, uv2 )
+				AddVertex( v2h, n2h, uv4 )
 			end
 
 		end
