@@ -64,7 +64,7 @@ void GameUpdate() {
 	float xborder = 32.0f / win_width;
 	float yborder = 32.0f / win_height;
 	SetViewport( Vec2(xborder,yborder), Vec2(1.0f-xborder,1.0f-yborder) );
-	ClearScreen( 0.5f, 0.5f, 0.5f );
+	//ClearScreen( 0.5f, 0.5f, 0.5f );
 
 	if( gRootScene ) {
 		gCurrentRenderGenerator = gRootScene;

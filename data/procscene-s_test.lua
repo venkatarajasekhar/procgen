@@ -152,7 +152,9 @@ function CameraAnim()
 	return ct,0,-st,0, 0,1,0,0, st,0,ct,0, x,y,z,1
 end
 function Fixup()
-	AddNode( "implicit", "checker", {0,0,0}, {0,0,0}, {1,1,1} )
+	--//TestShapes()
+	--AddNode( "implicit", "checker", {0,0,0}, {0,0,0}, {1,1,1} )
+	AddNode( "cube", "wood", {0,0,0}, {0,0,0}, {4,4,4} )
 end
 
 Fixup()
