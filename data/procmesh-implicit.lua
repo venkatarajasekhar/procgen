@@ -15,68 +15,64 @@ function GetMeshVert( vert ) return table.unpack(vertices[vert+1]) end
 function GetMeshNormal( vert ) return table.unpack(normals[vert+1]) end
 function GetMeshUV( vert ) return table.unpack(uvs[vert+1]) end
 
-function SurfaceFunction( x, y, z )
-	radius = 2.0
-	return x * x + y * y + z * z - radius * radius
+function SphereFunc( x, y, z )
+	radius = 3.5
+	return radius * radius - ( x * x + y * y + z * z )
+end
+function BlobFunc( x, y, z )
+	radius = 3.5
+	return radius * radius - ( x * x + y * y * y + z * z )
 end
 
+function AddQuad( v1,v2,v3,v4, normal, u1,u2,u3,u4 )
+	AddVertex( v1, normal, u1 )
+	AddVertex( v2, normal, u2 )
+	AddVertex( v3, normal, u3 )
+	AddVertex( v3, normal, u3 )
+	AddVertex( v2, normal, u2 )
+	AddVertex( v4, normal, u4 )
+end
+function ImplicitByBlocks( func, r )
+	for z=-r,r do
+		for y=-r,r do
+			for x=-r,r do
+				-- for this cell, see what the marching cube data is
+				if func( x, y, z ) > 0 then
+					d = 0.5
+					vl1 = {x-d,y-d,z-d}
+					vl2 = {x+d,y-d,z-d}
+					vl3 = {x-d,y-d,z+d}
+					vl4 = {x+d,y-d,z+d}
+
+					vh1 = {x-d,y+d,z-d}
+					vh2 = {x+d,y+d,z-d}
+					vh3 = {x-d,y+d,z+d}
+					vh4 = {x+d,y+d,z+d}
+					n = {0,0,1}
+					uv1 = {(x+0)/r,(z+0)/r}
+					uv2 = {(x+1)/r,(z+0)/r}
+					uv3 = {(x+0)/r,(z+1)/r}
+					uv4 = {(x+1)/r,(z+1)/r}
+					AddQuad( vl1,vl2,vl3,vl4, {0,-1,0}, uv1,uv2,uv3,uv4 )
+					AddQuad( vh1,vh2,vh3,vh4, {0,1,0}, uv1,uv2,uv3,uv4 )
+
+					AddQuad( vl1,vl2,vh1,vh2, {0,0,-1}, uv1,uv2,uv1,uv2 )
+					AddQuad( vl3,vl4,vh3,vh4, {0,0,1}, uv3,uv4,uv3,uv4 )
+					AddQuad( vl1,vh1,vl3,vh3, {-1,0,0}, uv1,uv1,uv3,uv3 )
+					AddQuad( vl2,vh2,vl4,vh4, {1,0,0}, uv2,uv2,uv4,uv4 )
+				end
+			end
+		end
+	end
+end
 function Fixup()
 	vertCount = 0
 	vertices = {}
 	normals = {}
 	uvs = {}
 
-	for z=-4,4 do
-		for y=-4,4 do
-			for x=-4,4 do
-				-- for this cell, see what the marching cube data is
-			end
-		end
-	end
+	ImplicitByBlocks( BlobFunc, 4 )
 
-	if true then
-		n = { 0,1,0 }
-		radii = {0,0.2,0.8,0.9,1,1.2,1,0.9,0.8,0.1,0.1,0}
-		p = {-4.1,-4,-3,-2,-1,0,1,2,3,4,5,5}
-		for i=-4,6 do
-			l,h = (i+4)/11,(i+5)/11
-			p1 = p[i+5]
-			p2 = p[i+6]
-			widthl = radii[i+5]
-			widthh = radii[i+6]
-			pi2 = 6.284
-			delta = pi2/8
-			rep = 3
-			for theta = 0,pi2,delta do
-				ta = theta
-				tb = theta+delta
-				sa = Sin(ta)
-				ca = Cos(ta)
-				sb = Sin(tb)
-				cb = Cos(tb)
-				v1l = { sa*widthl,p1,ca*widthl }
-				v2l = { sb*widthl,p1,cb*widthl }
-				v1h = { sa*widthh,p2,ca*widthh }
-				v2h = { sb*widthh,p2,cb*widthh }
-				uv1 = { ta*rep/pi2,l }
-				uv2 = { tb*rep/pi2,l }
-				uv3 = { ta*rep/pi2,h }
-				uv4 = { tb*rep/pi2,h }
-				n1l = { sa,0,ca }
-				n2l = { sb,0,cb }
-				n1h = { sa,0,ca }
-				n2h = { sb,0,cb }
-
-				AddVertex( v1l, n1l, uv1 )
-				AddVertex( v2l, n2l, uv2 )
-				AddVertex( v1h, n1h, uv3 )
-				AddVertex( v1h, n1h, uv3 )
-				AddVertex( v2l, n2l, uv2 )
-				AddVertex( v2h, n2h, uv4 )
-			end
-
-		end
-	end
 	Log("FIXUP VCount = "..vertCount)
 end
 Fixup()
