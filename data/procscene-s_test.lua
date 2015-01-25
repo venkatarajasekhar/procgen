@@ -153,8 +153,9 @@ function CameraAnim()
 end
 function Fixup()
 	--//TestShapes()
-	--AddNode( "implicit", "checker", {0,0,0}, {0,0,0}, {1,1,1} )
-	AddNode( "cube", "wood", {0,0,0}, {0,0,0}, {4,4,4} )
+	--AddNode( "implicit", "checker:xstripes=256 ystripes=256", {0,0,0}, {0,0,0}, {1,1,1} )
+	AddNode( "implicit", "wood", {0,0,0}, {0,0,0}, {1,1,1} )
+	--AddNode( "cube", "wood", {0,0,0}, {0,0,0}, {4,4,4} )
 end
 
 Fixup()
