@@ -2,14 +2,22 @@ function ScriptName()
 	return "wood"
 end
 
+function BaseColour( ring )
+	tint = Noise( ring, 1, 1 )
+	return 240 - 20 * tint, 160 - 20 * tint, 80 + 20 * tint
+end
+
 function RingColour( radius )
-	radius = radius + Perlin( radius,7, 2,64,100 ) * 1.7
-	ringPos = radius % 1
+	radius = radius + Perlin( radius*16,7, 32,256,100 ) * 1.9
+	ring = math.floor(radius)
+	ringPos = radius - ring
 	a = ringPos * ringPos
-	a = a * a
+	a = a * a * a
 	b = 1 - a
 
-	return 240 -140*a, 160-110*a, 70-50*a, 255
+	R,G,B = BaseColour( ring )
+
+	return R -140*a, G-110*a, B-50*a, 255
 end
 	
 function RingLookup( x, y )
