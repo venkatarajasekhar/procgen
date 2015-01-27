@@ -24,6 +24,8 @@ function BlobFunc( x, y, z )
 	return radius * radius - ( x * x + y * y * y + z * z )
 end
 
+transform = {{1,0,0},{0,1,0},{0,0,1},{0,0,0}}
+
 function AddTri( v1,v2,v3, normal, u1,u2,u3 )
 	n = normal
 	ax=v2[1]-v1[1] ay=v2[2]-v1[2] az=v2[3]-v1[3]
@@ -60,38 +62,6 @@ function AddQuad( v1,v2,v3,v4, normal, u1,u2,u3,u4 )
 	AddVertex( v3, n, u3 )
 	AddVertex( v2, n, u2 )
 	AddVertex( v4, n, u4 )
-end
-function ImplicitByBlocks( func, r )
-	for z=-r,r do
-		for y=-r,r do
-			for x=-r,r do
-				if func( x, y, z ) > 0 then
-					d = 0.5
-					vl1 = {x-d,y-d,z-d}
-					vl2 = {x+d,y-d,z-d}
-					vl3 = {x-d,y-d,z+d}
-					vl4 = {x+d,y-d,z+d}
-
-					vh1 = {x-d,y+d,z-d}
-					vh2 = {x+d,y+d,z-d}
-					vh3 = {x-d,y+d,z+d}
-					vh4 = {x+d,y+d,z+d}
-					n = {0,0,1}
-					uv1 = {(x+0)/r,(z+0)/r}
-					uv2 = {(x+1)/r,(z+0)/r}
-					uv3 = {(x+0)/r,(z+1)/r}
-					uv4 = {(x+1)/r,(z+1)/r}
-					AddQuad( vl1,vl2,vl3,vl4, {0,-1,0}, uv1,uv2,uv3,uv4 )
-					AddQuad( vh1,vh2,vh3,vh4, {0,1,0}, uv1,uv2,uv3,uv4 )
-
-					AddQuad( vl1,vl2,vh1,vh2, {0,0,-1}, uv1,uv2,uv1,uv2 )
-					AddQuad( vl3,vl4,vh3,vh4, {0,0,1}, uv3,uv4,uv3,uv4 )
-					AddQuad( vl1,vh1,vl3,vh3, {-1,0,0}, uv1,uv1,uv3,uv3 )
-					AddQuad( vl2,vh2,vl4,vh4, {1,0,0}, uv2,uv2,uv4,uv4 )
-				end
-			end
-		end
-	end
 end
 
 function GatherSolidsAndMids( func, r )
@@ -173,6 +143,31 @@ function GatherSolidsAndMids( func, r )
 	return solid, xmid,ymid,zmid
 end
 
+function RotateBitsZ(xyz,p)
+	i = p
+	while i > 0 do
+		a = band(xyz,1+16)
+		b = band(xyz,2+32)
+		c = band(xyz,4+64)
+		d = band(xyz,8+128)
+		xyz = a*2 + b*4 + c/4 +d/2
+		i = i - 1
+	end
+	return xyz
+end
+function RotateBitsX(xyz,p)
+	i = p
+	while i > 0 do
+		a = band(xyz,1+2)
+		b = band(xyz,4+8)
+		c = band(xyz,16+32)
+		d = band(xyz,64+128)
+		xyz = a*4 + b*16 +c/16 + d/4
+		i = i - 1
+	end
+	return xyz
+end
+
 function ImplicitByMarchingCube( func, r )
 	solid, xmid,ymid,zmid = GatherSolidsAndMids( func, r )
 
@@ -196,137 +191,146 @@ function ImplicitByMarchingCube( func, r )
 				xyz = xyz + solid[index+1+0*r2+1*r22] * 32
 				xyz = xyz + solid[index+0+1*r2+1*r22] * 64
 				xyz = xyz + solid[index+1+1*r2+1*r22] * 128
-
-				origin = solid[index+0+0*r2+0*r22] * 1
-				xpos = solid[index+1+0*r2+0*r22] * 2
-				ypos = solid[index+0+1*r2+0*r22] * 2
-				zpos = solid[index+0+0*r2+1*r22] * 2
-				n = { origin - xpos, origin-ypos, origin-zpos }
 				
-				xd = xmid[index]
-				yd = ymid[index]
-				zd = zmid[index]
+				if not (xyz == 0) then
+					origin = solid[index+0+0*r2+0*r22] * 1
+					xpos = solid[index+1+0*r2+0*r22] * 1
+					ypos = solid[index+0+1*r2+0*r22] * 1
+					zpos = solid[index+0+0*r2+1*r22] * 1
+					n = { origin - xpos, origin-ypos, origin-zpos }
+					
+					xd = xmid[index]
+					yd = ymid[index]
+					zd = zmid[index]
 
-				vxyz={x+0,y+0,z+0}
-				vXyz={x+D,y+0,z+0}
-				vxYz={x+0,y+D,z+0}
-				vXYz={x+D,y+D,z+0}
-				vxyZ={x+0,y+0,z+D}
-				vXyZ={x+D,y+0,z+D}
-				vxYZ={x+0,y+D,z+D}
-				vXYZ={x+D,y+D,z+D}
-				mxyz={x+(xmid[index]or 0),y+0,z+0}
-				mxYz={x+(xmid[index+r2]or 0),y+D,z+0}
-				mxyZ={x+(xmid[index+r22]or 0),y+0,z+D}
-				mxYZ={x+(xmid[index+r2+r22]or 0),y+D,z+D}
-				myxz={x+0,y+(ymid[index]or 0),z+0}
-				myXz={x+D,y+(ymid[index+1]or 0),z+0}
-				myxZ={x+0,y+(ymid[index+r22]or 0),z+D}
-				myXZ={x+D,y+(ymid[index+1+r22]or 0),z+D}
-				mzxy={x+0,y+0,z+(zmid[index]or 0)}
-				mzXy={x+D,y+0,z+(zmid[index+1]or 0)}
-				mzxY={x+0,y+D,z+(zmid[index+r2]or 0)}
-				mzXY={x+D,y+D,z+(zmid[index+1+r2]or 0)}
+					vxyz={x+0,y+0,z+0}
+					vXyz={x+D,y+0,z+0}
+					vxYz={x+0,y+D,z+0}
+					vXYz={x+D,y+D,z+0}
+					vxyZ={x+0,y+0,z+D}
+					vXyZ={x+D,y+0,z+D}
+					vxYZ={x+0,y+D,z+D}
+					vXYZ={x+D,y+D,z+D}
+					mxyz={x+(xmid[index]or 0),y+0,z+0}
+					mxYz={x+(xmid[index+r2]or 0),y+D,z+0}
+					mxyZ={x+(xmid[index+r22]or 0),y+0,z+D}
+					mxYZ={x+(xmid[index+r2+r22]or 0),y+D,z+D}
+					myxz={x+0,y+(ymid[index]or 0),z+0}
+					myXz={x+D,y+(ymid[index+1]or 0),z+0}
+					myxZ={x+0,y+(ymid[index+r22]or 0),z+D}
+					myXZ={x+D,y+(ymid[index+1+r22]or 0),z+D}
+					mzxy={x+0,y+0,z+(zmid[index]or 0)}
+					mzXy={x+D,y+0,z+(zmid[index+1]or 0)}
+					mzxY={x+0,y+D,z+(zmid[index+r2]or 0)}
+					mzXY={x+D,y+D,z+(zmid[index+1+r2]or 0)}
 
-				--n = {1,1,1}
-				if xyz == 1 or xyz == (255-1) then
-					AddTri( mxyz, myxz, mzxy, n, uv1,uv2,uv3 )
-				end
-				if xyz == 2 or xyz == (255-2) then
-					AddTri( mxyz, myXz, mzXy, n, uv1,uv2,uv3 )
-				end
-				if xyz == 4 or xyz == (255-4) then
-					AddTri( mxYz, myxz, mzxY, n, uv1,uv2,uv3 )
-				end
-				if xyz == 8 or xyz == (255-8) then
-					AddTri( mxYz, myXz, mzXY, n, uv1,uv2,uv3 )
-				end
-				if xyz == 16 or xyz == (255-16) then
-					AddTri( mxyZ, myxZ, mzxy, n, uv1,uv2,uv3 )
-				end
-				if xyz == 32 or xyz == (255-32) then
-					AddTri( mxyZ, myXZ, mzXy, n, uv1,uv2,uv3 )
-				end
-				if xyz == 64 or xyz == (255-64) then
-					AddTri( mxYZ, myxZ, mzxY, n, uv1,uv2,uv3 )
-				end
-				if xyz == 128 or xyz == (255-128) then
-					AddTri( mxYZ, myXZ, mzXY, n, uv1,uv2,uv3 )
-				end
+					--if BitWeight( xyz ) > 4 then
+						--xyz = 255 - xyz
+					--end
+					-- case 0 -- bail.
 
-				if xyz == 1+2 or xyz == 255-(1+2) then
-					AddQuad( myxz,myXz,mzxy,mzXy, n, uv1,uv2,uv3,uv4 )
-				end
-				if xyz == 4+8 or xyz == 255-(4+8) then
-					AddQuad( myxz, myXz, mzxY,mzXY, n, uv1,uv2,uv3,uv4 )
-				end
-				if xyz == 16+32 or xyz == 255-(16+32) then
-					AddQuad( myxZ, myXZ, mzxy, mzXy, n, uv1,uv2,uv3,uv4 )
-				end
-				if xyz == 64+128 or xyz == 255-(64+128) then
-					AddQuad( myxZ,myXZ, mzxY,mzXY, n, uv1,uv2,uv3,uv4 )
-				end
+					--while not xyz == 0 do
+					storedxyz = xyz
 
-				if xyz == 1+4 or xyz == 255-(1+4) then
-					AddQuad( mzxy,mzxY, mxyz, mxYz, n, uv1,uv2,uv3,uv4 )
-				end
-				if xyz == 2+8 or xyz == 255-(2+8) then
-					AddQuad( mzXy,mzXY,mxyz,mxYz, n, uv1,uv2,uv3,uv4 )
-				end
-				if xyz == 16+64 or xyz == 255-(16+64) then
-					AddQuad( mzxy,mzxY,mxyZ,mxYZ, n, uv1,uv2,uv3,uv4 )
-				end
-				if xyz == 32+128 or xyz == 255-(32+128) then
-					AddQuad( mzXy, mzXY, mxyZ,mxYZ, n, uv1,uv2,uv3,uv4 )
-				end
+					for perm=0,15 do
+						p = perm % 4
+						xrot = perm / 4
+						xyz2 = RotateBitsX(storedxyz,xrot)
+						xyz = RotateBitsZ(xyz2,p)
+						-- case 1
+						if xyz == 1 then
+							AddTri( mxyz, myxz, mzxy, n, uv1,uv2,uv3 )
+							xyz = 0
+						end
+						
+						-- case 2
+						if xyz == 1+2 then
+							AddQuad( myxz,myXz,mzxy,mzXy, n, uv1,uv2,uv3,uv4 )
+							xyz = 0
+						end
 
-				if xyz == 1+16 or xyz == 255-(1+16) then
-					AddQuad( myxz, myxZ, mxyz, mxyZ, n, uv1,uv2,uv3,uv4 )
-				end
-				if xyz == 2+32 or xyz == 255-(2+32) then
-					AddQuad( myXz, myXZ, mxyz, mxyZ, n, uv1,uv2,uv3,uv4 )
-				end
-				if xyz == 4+64 or xyz == 255-(4+64) then
-					AddQuad( myxz,myxZ,mxYz,mxYZ, n, uv1,uv2,uv3,uv4 )
-				end
-				if xyz == 8+128 or xyz == 255-(8+128) then
-					AddQuad( myXz,myXZ,mxYz,mxYZ, n, uv1,uv2,uv3,uv4 )
-				end
+						-- case 3
+						if xyz == 1+8 then
+							AddTri( mxyz, myxz, mzxy, n, uv1,uv2,uv3 )
+							AddTri( mxYz, myXz, mzXY, n, uv1,uv2,uv3 )
+							xyz = 0
+						end
 
-				if xyz == 1+2+4+8 or xyz == 16+32+64+128 then
-					AddQuad( mzxy, mzXy, mzxY, mzXY, n, uv1,uv2,uv3,uv4 )
-				end
-				if xyz == 1+4+16+64 or xyz == 2+8+32+128 then
-					AddQuad( mxyz,mxYz,mxyZ,mxYZ, n, uv1,uv2,uv3,uv4 )
-				end
-				if xyz == 1+2+16+32 or xyz == 4+8+64+128 then
-					AddQuad( myxz,myXz,myxZ,myXZ, n, uv1,uv2,uv3,uv4 )
-				end
+						-- case 4
+						if xyz == 1+2+4 then
+							AddQuad( mxYz,myXz,mzxY,mzXy, n, uv1,uv2,uv3,uv4 )
+							AddTri( mzxY,mzXy,mzxy, n, uv1,uv2,uv3 )
+							xyz = 0
+						end
+						
 
-				if xyz == 1+2+4+16 or xyz == 255-(1+2+4+16) then
-					AddQuad( mxYz,myXz,mxyZ,mzXy, n, uv1,uv2,uv3,uv4 )
-					AddQuad( mxYz,mxyZ,mzxY,myxZ, n, uv1,uv2,uv3,uv4 )
-				end
-				if xyz == 1+2+8+32 or xyz == 255-(1+2+8+32) then
-					AddQuad( mxYz,myxz,mxyZ,mzxy, n, uv1,uv2,uv3,uv4 )
-					AddQuad( mxYz,mxyZ,mzXY,myXZ, n, uv1,uv2,uv3,uv4 )
-				end
-				if xyz == 1+4+8+64 then
-					AddQuad( mxyz,myXz,mxYZ,mzXY, n, uv1,uv2,uv3,uv4 )
-					AddQuad( mxyz,mxYZ,mzxy,myxZ, n, uv1,uv2,uv3,uv4 )
-				end
-				if xyz == 2+4+8+128 then
-					AddQuad( mxyz,myxz,mxYZ,mzxY, n, uv1,uv2,uv3,uv4 )
-					AddQuad( mxyz,mxYZ,mzXy,myXZ, n, uv1,uv2,uv3,uv4 )
-				end
+						-- case 5
+						if xyz == 1+2+4+8 then
+							AddQuad( mzxy, mzXy, mzxY, mzXY, n, uv1,uv2,uv3,uv4 )
+							xyz = 0
+						end
 
-				if xyz == 1+2+4 or xyz == 255-(1+2+4) then
-					AddQuad( mxYz,myXz,mzxY,mzXy, n, uv1,uv2,uv3,uv4 )
-					AddTri( mzxY,mzXy,mzxy, n, uv1,uv2,uv3 )
-				end
-				if xyz == 1+2+8 or xyz == 255-(1+2+8) then
-					AddQuad( mxYz,myxz,mzXY,mzxy, n, uv1,uv2,uv3,uv4 )
-					AddTri( mzxy,mzXy,mzXY, n, uv1,uv2,uv3 )
+						-- case 6
+						if xyz == 1+2+4+128 then
+							AddQuad( mxYz,myXz,mzxY,mzXy, n, uv1,uv2,uv3,uv4 )
+							AddTri( mzxY,mzXy,mzxy, n, uv1,uv2,uv3 )
+							AddTri( mxYZ, myXZ, mzXY, n, uv1,uv2,uv3 )
+							xyz = 0
+						end
+
+						-- case 7
+						if xyz == 1+8+32+64 then
+							AddTri( mxyz, myxz, mzxy, n, uv1,uv2,uv3 )
+							AddTri( mxYz, myXz, mzXY, n, uv1,uv2,uv3 )
+							AddTri( mxyZ, myXZ, mzXy, n, uv1,uv2,uv3 )
+							AddTri( mxYZ, myxZ, mzxY, n, uv1,uv2,uv3 )
+							xyz = 0
+						end
+
+						-- case 8
+						if xyz == 1+2+4+16 then
+							AddQuad( mxYz,myXz,mxyZ,mzXy, n, uv1,uv2,uv3,uv4 )
+							AddQuad( mxYz,mxyZ,mzxY,myxZ, n, uv1,uv2,uv3,uv4 )
+							xyz = 0
+						end
+
+						-- case 9
+						if xyz == 1+2+4+32 then
+							AddTri( mxYz, mzxy, mzxY, n, uv1,uv2,uv3 )
+							AddTri( mxYz, mzxy, myXz, n, uv1,uv2,uv3 )
+							AddTri( myXz, mzxy, myXZ, n, uv1,uv2,uv3 )
+							xyz = 0
+						end
+
+						-- case 10
+						if xyz == 1+128 then
+							AddTri( mxyz, myxz, mzxy, n, uv1,uv2,uv3 )
+							AddTri( mxYZ, myXZ, mzXY, n, uv1,uv2,uv3 )
+							xyz = 0
+						end
+
+						-- case 11
+						if xyz == 1+2+128 then
+							AddQuad( myxz,myXz,mzxy,mzXy, n, uv1,uv2,uv3,uv4 )
+							AddTri( mxYZ, myXZ, mzXY, n, uv1,uv2,uv3 )
+							xyz = 0
+						end
+
+						-- case 12
+						if xyz == 1+8+64 then
+							AddTri( mxyz, myxz, mzxy, n, uv1,uv2,uv3 )
+							AddTri( mxYz, myXz, mzXY, n, uv1,uv2,uv3 )
+							AddTri( mxYZ, myxZ, mzxY, n, uv1,uv2,uv3 )
+							xyz = 0
+						end
+
+						-- case 13
+						if xyz == 1+2+64+128 then
+							AddQuad( myxz,myXz,mzxy,mzXy, n, uv1,uv2,uv3,uv4 )
+							AddQuad( myxZ,myXZ, mzxY,mzXY, n, uv1,uv2,uv3,uv4 )
+							xyz = 0
+						end
+					end
 				end
 			end
 		end

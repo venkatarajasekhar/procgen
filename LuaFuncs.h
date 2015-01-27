@@ -96,6 +96,22 @@ static int l_GetTime( lua_State *L ) {
 	lua_pushnumber(L, drawStart);  /* push result */
 	return 1;  /* number of results */
 }
+static int l_BitWeight( lua_State *L ) {
+	float x = (float)lua_tonumber(L, 1);  /* get argument */
+	int i = x+0.5;
+	int weight = bitweight14( i );
+	lua_pushnumber(L, weight);  /* push result */
+	return 1;  /* number of results */
+}
+static int l_band( lua_State *L ) {
+	float a = (float)lua_tonumber(L, 1);  /* get argument */
+	float b = (float)lua_tonumber(L, 2);  /* get argument */
+	int ia = a+0.5;
+	int ib = b+0.5;
+	lua_pushnumber(L, ia&ib);  /* push result */
+	return 1;  /* number of results */
+}
+
 
 #include "core/geom.h"
 #include <vector>
@@ -119,6 +135,62 @@ static int l_Translate( lua_State *L ) {
 	float y = (float)lua_tonumber(L, 2);  /* get argument */
 	float z = (float)lua_tonumber(L, 3);  /* get argument */
 	gCurrentMatrix.Translate( Vec3( x, y, z ) );
+	return 0;  /* number of results */
+}
+static int l_Mirror( lua_State *L ) {
+	float x = (float)lua_tonumber(L, 1);  /* get argument */
+	int axis = x+0.5;
+	switch( axis ) {
+		case 0: // x
+			gCurrentMatrix.x.x *= -1.0f;
+			gCurrentMatrix.y.x *= -1.0f;
+			gCurrentMatrix.z.x *= -1.0f;
+		break;
+		case 1: // y
+			gCurrentMatrix.x.y *= -1.0f;
+			gCurrentMatrix.y.y *= -1.0f;
+			gCurrentMatrix.z.y *= -1.0f;
+		break;
+		case 2: // z
+			gCurrentMatrix.x.z *= -1.0f;
+			gCurrentMatrix.y.z *= -1.0f;
+			gCurrentMatrix.z.z *= -1.0f;
+		break;
+	}
+	return 0;  /* number of results */
+}
+static int l_Rotate90( lua_State *L ) {
+	float x = (float)lua_tonumber(L, 1);  /* get argument */
+	int axis = x+0.5;
+	switch( axis ) {
+		case 0: // x
+		{
+			float t = gCurrentMatrix.y.z;
+			gCurrentMatrix.y.z = gCurrentMatrix.z.z;
+			gCurrentMatrix.z.z = gCurrentMatrix.z.y;
+			gCurrentMatrix.z.y = gCurrentMatrix.y.y;
+			gCurrentMatrix.y.y = t;
+		}
+		break;
+		case 1: // y
+		{
+			float t = gCurrentMatrix.x.z;
+			gCurrentMatrix.x.z = gCurrentMatrix.z.z;
+			gCurrentMatrix.z.z = gCurrentMatrix.z.x;
+			gCurrentMatrix.z.x = gCurrentMatrix.x.x;
+			gCurrentMatrix.x.x = t;
+		}
+		break;
+		case 2: // z
+		{
+			float t = gCurrentMatrix.x.y;
+			gCurrentMatrix.x.y = gCurrentMatrix.y.y;
+			gCurrentMatrix.y.y = gCurrentMatrix.y.x;
+			gCurrentMatrix.y.x = gCurrentMatrix.x.x;
+			gCurrentMatrix.x.x = t;
+		}
+		break;
+	}
 	return 0;  /* number of results */
 }
 static int l_Rotate( lua_State *L ) {
@@ -163,11 +235,15 @@ static void RegisterLuaFuncs( lua_State *L ) {
 	lua_pushcfunction(L, l_ATan2); lua_setglobal(L, "ATan2");
 	lua_pushcfunction(L, l_Sqrt); lua_setglobal(L, "Sqrt");
 	lua_pushcfunction(L, l_GetTime); lua_setglobal(L, "GetTime");
+	lua_pushcfunction(L, l_BitWeight); lua_setglobal(L, "BitWeight");
+	lua_pushcfunction(L, l_band); lua_setglobal(L, "band");
 
 	lua_pushcfunction(L, l_Identity ); lua_setglobal( L, "Identity" );
 	lua_pushcfunction(L, l_Push ); lua_setglobal( L, "Push" );
 	lua_pushcfunction(L, l_Pop ); lua_setglobal( L, "Pop" );
 	lua_pushcfunction(L, l_Translate ); lua_setglobal( L, "Translate" );
+	lua_pushcfunction(L, l_Mirror ); lua_setglobal( L, "Mirror" );
+	lua_pushcfunction(L, l_Rotate90 ); lua_setglobal( L, "Rotate90" );
 	lua_pushcfunction(L, l_Rotate ); lua_setglobal( L, "Rotate" );
 	lua_pushcfunction(L, l_Scale ); lua_setglobal( L, "Scale" );
 	lua_pushcfunction(L, l_Transform ); lua_setglobal( L, "Transform" );
