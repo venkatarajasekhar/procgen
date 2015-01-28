@@ -39,15 +39,58 @@ validConfigs = [
 	[0,0,0,0,0,0,0,0], # 0
 	[1,0,0,0,0,0,0,0], # 1 single corner triangle
 	[1,1,0,0,0,0,0,0], # 2 single edge quad
-	[1,1,1,0,0,0,0,0], # 3 three element corner (one quad one tri)
-	[1,1,1,1,0,0,0,0], # 4 full face (one quad)
-	[1,1,0,0,0,0,1,1], # 5 opposing edges
-	[1,1,0,0,0,1,0,1], # 6 anticlock screw
-	[1,1,0,0,1,0,1,0], # 7 clockwise screw
-	[1,0,0,1,0,1,1,0], # 8 four corners
-	[1,0,0,1,0,1,0,0], # 9 three corners
-	[1,1,0,0,0,0,1,0], # 10 edge and opposing corner
-	[1,1,1,0,1,0,0,0], # 11 diagonal half cut
-	[1,0,0,0,0,0,0,1], # 12 opposing corners
+	[1,0,0,1,0,0,0,0], # 3 corners on the same face
+	[1,1,1,0,0,0,0,0], # 4 three element corner (one quad one tri)
+
+	[1,1,1,1,0,0,0,0], # 5 full face (one quad)
+	[1,1,1,0,0,0,0,1], # 6 three element corner (one quad one tri) plus opposite corner
+	[1,0,0,1,0,1,1,0], # 7 four corners
+	[1,1,1,0,1,0,0,0], # 8 diagonal half cut
+	[1,1,0,0,1,0,1,0], # 9 clockwise screw
+
+	[1,0,0,0,0,0,0,1], # 10 opposing corners
+	[1,1,0,0,0,0,1,0], # 11 edge and opposing corner
+	[1,0,0,1,0,1,0,0], # 12 three corners
+	[1,1,0,0,0,0,1,1], # 13 opposing edges
+	[1,1,0,0,0,1,0,1], # 14 anticlock screw
 ]
 base = [0,1,2,3,4,5,6,7]
+
+def GetListFromCubeID( cubeID ):
+	return [1 if cubeID&(1<<x) else 0 for x in range(8)]
+
+def FindRotations( cubeID ):
+	baseCube = GetListFromCubeID( cubeID )
+	for xRot in range(4):
+		yrotCube = baseCube[:]
+		for yRot in range(4):
+			zrotCube = yrotCube[:]
+			for zRot in range(4):
+				for i in range(15):
+					if zrotCube == validConfigs[i]:
+						return i,zRot+4*yRot+16*xRot
+				zrotCube = RotateZ(zrotCube)
+			yrotCube = RotateY(yrotCube)
+		baseCube = RotateX(baseCube)
+	baseCube = GetListFromCubeID( 255-cubeID )
+	for xRot in range(4):
+		yrotCube = baseCube[:]
+		for yRot in range(4):
+			zrotCube = yrotCube[:]
+			for zRot in range(4):
+				for i in range(15):
+					if zrotCube == validConfigs[i]:
+						return i,zRot+4*yRot+16*xRot
+				zrotCube = RotateZ(zrotCube)
+			yrotCube = RotateY(yrotCube)
+		baseCube = RotateX(baseCube)
+	return -1,0
+		
+orientations = {}
+for cubeID in range(255):
+	mesh, ori = FindRotations( cubeID )
+	orientations[ori] = 1
+	print "CUBE {} -> {}".format(cubeID,FindRotations( cubeID ))
+used = [x for x in orientations]
+print len(used)
+print used
