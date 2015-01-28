@@ -87,10 +87,27 @@ def FindRotations( cubeID ):
 	return -1,0
 		
 orientations = {}
-for cubeID in range(255):
+r = {}
+for cubeID in range(256):
 	mesh, ori = FindRotations( cubeID )
+	r[cubeID] = (mesh,ori)
 	orientations[ori] = 1
 	print "CUBE {} -> {}".format(cubeID,FindRotations( cubeID ))
+
+f = open("mc.h","w")
+f.write("#ifndef _MC_H_\n")
+f.write("#define _MC_H_\n")
+f.write("static const char mc_mesh[] = {\n")
+for key, value in r.iteritems():
+	f.write("{},".format( value[0] ) )
+f.write("};\n")
+f.write("static const char mc_orientation[] = {\n")
+for key, value in r.iteritems():
+	f.write("{},".format( value[1] ) )
+f.write("};\n")
+f.write("#endif\n")
+f.close()
+
 used = [x for x in orientations]
 print len(used)
 print used

@@ -191,6 +191,8 @@ function ImplicitByMarchingCube( func, r )
 				xyz = xyz + solid[index+1+0*r2+1*r22] * 32
 				xyz = xyz + solid[index+0+1*r2+1*r22] * 64
 				xyz = xyz + solid[index+1+1*r2+1*r22] * 128
+	
+				mesh,orientation = MCLookup(xyz)
 				
 				if not (xyz == 0) then
 					origin = solid[index+0+0*r2+0*r22] * 1
@@ -232,7 +234,7 @@ function ImplicitByMarchingCube( func, r )
 					--while not xyz == 0 do
 					storedxyz = xyz
 
-					for perm=0,15 do
+					for perm=0,0 do
 						p = perm % 4
 						xrot = perm / 4
 						xyz2 = RotateBitsX(storedxyz,xrot)

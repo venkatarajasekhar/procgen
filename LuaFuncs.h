@@ -223,6 +223,16 @@ static int l_Transform( lua_State *L ) {
 	return 3;  /* number of results */
 }
 
+#include "mc.h"
+
+static int l_MCLookup( lua_State *L ) {
+	int cubeID = 0.5 + (float)lua_tonumber(L, 1);  /* get argument */
+	int mesh = mc_mesh[cubeID&255];
+	int orientation = mc_orientation[cubeID&255];
+	lua_pushnumber(L, mesh);  /* push result */
+	lua_pushnumber(L, orientation);  /* push result */
+	return 3;  /* number of results */
+}
 
 static void RegisterLuaFuncs( lua_State *L ) {
 	lua_pushcfunction(L, l_Log ); lua_setglobal( L, "Log" );
@@ -247,6 +257,8 @@ static void RegisterLuaFuncs( lua_State *L ) {
 	lua_pushcfunction(L, l_Rotate ); lua_setglobal( L, "Rotate" );
 	lua_pushcfunction(L, l_Scale ); lua_setglobal( L, "Scale" );
 	lua_pushcfunction(L, l_Transform ); lua_setglobal( L, "Transform" );
+
+	lua_pushcfunction(L, l_MCLookup ); lua_setglobal( L, "MCLookup" );
 }
 
 #endif
