@@ -39,6 +39,15 @@ validConfigs = [
 	[0,0,0,0,0,0,0,0], # 0
 	[1,0,0,0,0,0,0,0], # 1 single corner triangle
 	[1,1,0,0,0,0,0,0], # 2 single edge quad
-	[1,0,0,0,0,0,0,0], # 3 
+	[1,1,1,0,0,0,0,0], # 3 three element corner (one quad one tri)
+	[1,1,1,1,0,0,0,0], # 4 full face (one quad)
+	[1,1,0,0,0,0,1,1], # 5 opposing edges
+	[1,1,0,0,0,1,0,1], # 6 anticlock screw
+	[1,1,0,0,1,0,1,0], # 7 clockwise screw
+	[1,0,0,1,0,1,1,0], # 8 four corners
+	[1,0,0,1,0,1,0,0], # 9 three corners
+	[1,1,0,0,0,0,1,0], # 10 edge and opposing corner
+	[1,1,1,0,1,0,0,0], # 11 diagonal half cut
+	[1,0,0,0,0,0,0,1], # 12 opposing corners
 ]
 base = [0,1,2,3,4,5,6,7]
