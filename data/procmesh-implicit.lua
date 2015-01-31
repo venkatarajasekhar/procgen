@@ -23,6 +23,26 @@ function BlobFunc( x, y, z )
 	radius = 3.9
 	return radius * radius - ( x * x + y * y * y + z * z )
 end
+function TorusFunc( x,y,z )
+	a = 5.0
+	b = 2.5
+	-- z2 + (sqrt(x2 + y2) - a)2 - b2 = 0
+	z2 = z*z
+	t = Sqrt(x*x+y*y)-a
+	return z2 + t*t - b*b
+end
+function OddFunc( x,y,z )
+	X = x
+	Y = y
+	x = X*0.707+Y*0.707
+	y = Y*0.707-X*0.707
+	a = 4.0
+	b = 2.0
+	z2 = z*z
+	t = Sqrt(Sqrt(Sqrt(x*x*x*x*x*x*x*x+y*y*y*y*y*y*y*y)))-a
+	vol = z*z+t*t
+	return vol - b*b
+end
 
 transform = {{1,0,0},{0,1,0},{0,0,1},{0,0,0}}
 
@@ -154,10 +174,10 @@ function ImplicitByMarchingCube( func, r )
 						--Log( "K:"..k.." V:"..v )
 					--end
 				
-					origin = solid[index+0+0*r2+0*r22] * 1
-					xpos = solid[index+1+0*r2+0*r22] * 1
-					ypos = solid[index+0+1*r2+0*r22] * 1
-					zpos = solid[index+0+0*r2+1*r22] * 1
+					origin = func(x,y,z)
+					xpos = func(x+1,y,z)
+					ypos = func(x,y+1,z)
+					zpos = func(x,y,z+1)
 					n = { origin - xpos, origin-ypos, origin-zpos }
 					
 					mxyz={x+(xmid[index]or 0),y+0,z+0}
@@ -203,9 +223,10 @@ function Fixup()
 	normals = {}
 	uvs = {}
 
-	ImplicitByMarchingCube( SphereFunc, 7 )
+	--ImplicitByMarchingCube( SphereFunc, 7 )
+	--ImplicitByMarchingCube( OddFunc, 9 )
+	ImplicitByMarchingCube( TorusFunc, 9 )
 	--ImplicitByMarchingCube( BlobFunc, 7 )
-	--ImplicitByBlocks( BlobFunc, 4 )
 
 	Log("FIXUP VCount = "..vertCount)
 end
