@@ -270,6 +270,25 @@ static int l_MCLookup( lua_State *L ) {
 	return 2;  /* number of results */
 }
 
+#include "pbmc.h"
+
+static int l_MCLookup2( lua_State *L ) {
+	int cubeID = 0.5 + (float)lua_tonumber(L, 1);  /* get argument */
+	const int *triangles = pbmc_triangle[cubeID&255];
+	lua_settop(L,1);
+	lua_newtable(L);
+	int i = 0;
+	for( ; i < 16; ++i ) {
+		int edge = triangles[i];
+		if( edge == -1 )
+			break;
+		lua_pushnumber(L,edge);
+		lua_rawseti(L,-2,i+1);
+	}
+	lua_pushnumber(L,i/3);
+	return 2;  /* number of results */
+}
+
 static void RegisterLuaFuncs( lua_State *L ) {
 	lua_pushcfunction(L, l_Log ); lua_setglobal( L, "Log" );
 	lua_pushcfunction(L, l_Noise); lua_setglobal(L, "Noise");
@@ -296,6 +315,7 @@ static void RegisterLuaFuncs( lua_State *L ) {
 	lua_pushcfunction(L, l_Transform ); lua_setglobal( L, "Transform" );
 
 	lua_pushcfunction(L, l_MCLookup ); lua_setglobal( L, "MCLookup" );
+	lua_pushcfunction(L, l_MCLookup2 ); lua_setglobal( L, "MCLookup2" );
 }
 
 #endif

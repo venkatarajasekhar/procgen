@@ -54,7 +54,6 @@ validConfigs = [
 	[1,1,0,0,0,0,1,1], # 13 opposing edges
 	[1,1,0,0,0,1,0,1], # 14 anticlock screw
 ]
-base = [0,1,2,3,4,5,6,7]
 
 def GetListFromCubeID( cubeID ):
 	return [1 if cubeID&(1<<x) else 0 for x in range(8)]
