@@ -178,7 +178,7 @@ function ImplicitByMarchingCube( func, r )
 					xpos = func(x+1,y,z)
 					ypos = func(x,y+1,z)
 					zpos = func(x,y,z+1)
-					n = { origin - xpos, origin-ypos, origin-zpos }
+					n = { xpos-origin, ypos-origin, zpos-origin }
 					
 					mxyz={x+(xmid[index]or 0),y+0,z+0}
 					mxYz={x+(xmid[index+r2]or 0),y+D,z+0}
