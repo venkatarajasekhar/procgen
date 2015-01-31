@@ -30,7 +30,7 @@ void Scene::PushNode( const Mat44 &orientation ) {
 }
 
 void Scene::Render( const Mat44 &rootTransform ) {
-	Log( 3, "Scene::Render this=%x\n", this);
+	//Log( 3, "Scene::Render this=%x\n", this);
 	for( NodeVec::iterator i = m_nodes.begin(); i != m_nodes.end(); ++i ) {
 		Mat44 o = i->GetOrientation();
 		Mat44 transform = o * rootTransform;

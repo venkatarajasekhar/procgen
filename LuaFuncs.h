@@ -164,30 +164,28 @@ static int l_Rotate90( lua_State *L ) {
 	int axis = x+0.5;
 	switch( axis ) {
 		case 0: // x
-		{
-			float t = gCurrentMatrix.y.z;
-			gCurrentMatrix.y.z = gCurrentMatrix.z.z;
-			gCurrentMatrix.z.z = gCurrentMatrix.z.y;
-			gCurrentMatrix.z.y = gCurrentMatrix.y.y;
-			gCurrentMatrix.y.y = t;
-		}
+			gCurrentMatrix = gCurrentMatrix * Mat44(
+					Vec4(1,0,0,0),
+					Vec4(0,0,1,0),
+					Vec4(0,-1,0,0),
+					Vec4(0,0,0,1) );
 		break;
 		case 1: // y
 		{
-			float t = gCurrentMatrix.x.z;
-			gCurrentMatrix.x.z = gCurrentMatrix.z.z;
-			gCurrentMatrix.z.z = gCurrentMatrix.z.x;
-			gCurrentMatrix.z.x = gCurrentMatrix.x.x;
-			gCurrentMatrix.x.x = t;
+			gCurrentMatrix = gCurrentMatrix * Mat44(
+					Vec4(0,0,-1,0),
+					Vec4(0,1,0,0),
+					Vec4(1,0,0,0),
+					Vec4(0,0,0,1) );
 		}
 		break;
 		case 2: // z
 		{
-			float t = gCurrentMatrix.x.y;
-			gCurrentMatrix.x.y = gCurrentMatrix.y.y;
-			gCurrentMatrix.y.y = gCurrentMatrix.y.x;
-			gCurrentMatrix.y.x = gCurrentMatrix.x.x;
-			gCurrentMatrix.x.x = t;
+			gCurrentMatrix = gCurrentMatrix * Mat44(
+					Vec4(0,1,0,0),
+					Vec4(-1,0,0,0),
+					Vec4(0,0,1,0),
+					Vec4(0,0,0,1) );
 		}
 		break;
 	}
@@ -208,19 +206,57 @@ static int l_Scale( lua_State *L ) {
 	return 0;  /* number of results */
 }
 static int l_Transform( lua_State *L ) {
-	float x = (float)lua_tonumber(L, 1);  /* get argument */
-	float y = (float)lua_tonumber(L, 2);  /* get argument */
-	float z = (float)lua_tonumber(L, 3);  /* get argument */
-	Vec4 r = gCurrentMatrix * Vec4( x, y, z, 1 );
-	//Log(3, "Convert %f,%f,%f -> %f,%f,%f\n", x,y,z, r.x,r.y,r.z );
-	//Log(3, "Using  %f,%f,%f,%f\n", gCurrentMatrix.x.x, gCurrentMatrix.x.y, gCurrentMatrix.x.z, gCurrentMatrix.x.w );
-	//Log(3, "Using  %f,%f,%f,%f\n", gCurrentMatrix.y.x, gCurrentMatrix.y.y, gCurrentMatrix.y.z, gCurrentMatrix.y.w );
-	//Log(3, "Using  %f,%f,%f,%f\n", gCurrentMatrix.z.x, gCurrentMatrix.z.y, gCurrentMatrix.z.z, gCurrentMatrix.z.w );
-	//Log(3, "Using  %f,%f,%f,%f\n", gCurrentMatrix.w.x, gCurrentMatrix.w.y, gCurrentMatrix.w.z, gCurrentMatrix.w.w );
-	lua_pushnumber(L, r.x);  /* push result */
-	lua_pushnumber(L, r.y);  /* push result */
-	lua_pushnumber(L, r.z);  /* push result */
-	return 3;  /* number of results */
+	int args = lua_gettop(L);
+	if( args == 3 ) {
+		float x = (float)lua_tonumber(L, 1);  /* get argument */
+		float y = (float)lua_tonumber(L, 2);  /* get argument */
+		float z = (float)lua_tonumber(L, 3);  /* get argument */
+		Vec4 r = gCurrentMatrix * Vec4( x, y, z, 1 );
+		//Log(3, "Convert %f,%f,%f -> %f,%f,%f\n", x,y,z, r.x,r.y,r.z );
+		//Log(3, "Using  %f,%f,%f,%f\n", gCurrentMatrix.x.x, gCurrentMatrix.x.y, gCurrentMatrix.x.z, gCurrentMatrix.x.w );
+		//Log(3, "Using  %f,%f,%f,%f\n", gCurrentMatrix.y.x, gCurrentMatrix.y.y, gCurrentMatrix.y.z, gCurrentMatrix.y.w );
+		//Log(3, "Using  %f,%f,%f,%f\n", gCurrentMatrix.z.x, gCurrentMatrix.z.y, gCurrentMatrix.z.z, gCurrentMatrix.z.w );
+		//Log(3, "Using  %f,%f,%f,%f\n", gCurrentMatrix.w.x, gCurrentMatrix.w.y, gCurrentMatrix.w.z, gCurrentMatrix.w.w );
+		lua_pushnumber(L, r.x);  /* push result */
+		lua_pushnumber(L, r.y);  /* push result */
+		lua_pushnumber(L, r.z);  /* push result */
+		//Log(3, "Input  %f,%f,%f\n", x,y,z );
+		//Log(3, "Output %f,%f,%f,%f\n", r.x,r.y,r.z,r.w );
+		return 3;  /* number of results */
+	} else if( args == 1 ) {
+		luaL_checktype(L, 1, LUA_TTABLE);
+		lua_rawgeti(L, 1, 1);
+		lua_rawgeti(L, 1, 2);
+		lua_rawgeti(L, 1, 3);
+		float x = (float)lua_tonumber(L, -3);  /* get argument */
+		float y = (float)lua_tonumber(L, -2);  /* get argument */
+		float z = (float)lua_tonumber(L, -1);  /* get argument */
+		Vec4 r = gCurrentMatrix * Vec4( x, y, z, 1 );
+
+		lua_settop(L,1);
+		//lua_newtable(L);
+		lua_pushnumber(L,r.x);
+		lua_rawseti(L,-2,1);
+		lua_pushnumber(L,r.y);
+		lua_rawseti(L,-2,2);
+		lua_pushnumber(L,r.z);
+		lua_rawseti(L,-2,3);
+
+		//Log(3, "Input  %f,%f,%f\n", x,y,z );
+		//Log(3, "Output %f,%f,%f,%f\n", r.x,r.y,r.z,r.w );
+		return 1;
+	} else {
+		Log(3, "Invalid argument count in Transform\n" );
+		return 0;
+	}
+}
+
+static int l_PrintCurrentMatrix( lua_State * ) {
+		Log(3, "MAT44 X %f,%f,%f,%f\n", gCurrentMatrix.x.x, gCurrentMatrix.x.y, gCurrentMatrix.x.z, gCurrentMatrix.x.w );
+		Log(3, "MAT44 Y %f,%f,%f,%f\n", gCurrentMatrix.y.x, gCurrentMatrix.y.y, gCurrentMatrix.y.z, gCurrentMatrix.y.w );
+		Log(3, "MAT44 Z %f,%f,%f,%f\n", gCurrentMatrix.z.x, gCurrentMatrix.z.y, gCurrentMatrix.z.z, gCurrentMatrix.z.w );
+		Log(3, "MAT44 W %f,%f,%f,%f\n", gCurrentMatrix.w.x, gCurrentMatrix.w.y, gCurrentMatrix.w.z, gCurrentMatrix.w.w );
+	return 0;
 }
 
 #include "mc.h"
@@ -231,7 +267,7 @@ static int l_MCLookup( lua_State *L ) {
 	int orientation = mc_orientation[cubeID&255];
 	lua_pushnumber(L, mesh);  /* push result */
 	lua_pushnumber(L, orientation);  /* push result */
-	return 3;  /* number of results */
+	return 2;  /* number of results */
 }
 
 static void RegisterLuaFuncs( lua_State *L ) {
@@ -247,6 +283,7 @@ static void RegisterLuaFuncs( lua_State *L ) {
 	lua_pushcfunction(L, l_GetTime); lua_setglobal(L, "GetTime");
 	lua_pushcfunction(L, l_BitWeight); lua_setglobal(L, "BitWeight");
 	lua_pushcfunction(L, l_band); lua_setglobal(L, "band");
+	lua_pushcfunction(L, l_PrintCurrentMatrix); lua_setglobal(L, "PrintCurrentMatrix");
 
 	lua_pushcfunction(L, l_Identity ); lua_setglobal( L, "Identity" );
 	lua_pushcfunction(L, l_Push ); lua_setglobal( L, "Push" );

@@ -115,8 +115,8 @@ void GameUpdate() {
 }
 
 void PreBoot() {
-	win_width = 800;
-	win_height = 800;
+	win_width = 600;
+	win_height = 600;
 }
 DO_PREBOOT(PreBoot);
 
