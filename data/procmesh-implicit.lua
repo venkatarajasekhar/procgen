@@ -43,6 +43,15 @@ function OddFunc( x,y,z )
 	vol = z*z+t*t
 	return vol - b*b
 end
+function LumpFunc( x,y,z )
+	x = x + 100
+	z = z + 100
+	h = Perlin( x*64, z*64, 128, 1024, 101 )  - 0.7
+	y = y - h * 8
+	p = Perlin3( x*16, y*16, z*16, 64, 256, 100 ) - 0.7
+	f = y + p * 13
+	return f
+end
 
 transform = {{1,0,0},{0,1,0},{0,0,1},{0,0,0}}
 
@@ -148,9 +157,9 @@ function ImplicitByMarchingCube( func, r )
 
 	d = 0.5
 	D = d+d
-	for z=-r,r-1 do
-		for y=-r,r-1 do
-			for x=-r,r-1 do
+	for z=-r,r-2 do
+		for y=-r,r-2 do
+			for x=-r,r-2 do
 				uv1 = {(x+0)/r,(z+0)/r}
 				uv2 = {(x+1)/r,(z+0)/r}
 				uv3 = {(x+0)/r,(z+1)/r}
@@ -225,8 +234,9 @@ function Fixup()
 
 	--ImplicitByMarchingCube( SphereFunc, 7 )
 	--ImplicitByMarchingCube( OddFunc, 9 )
-	ImplicitByMarchingCube( TorusFunc, 9 )
+	--ImplicitByMarchingCube( TorusFunc, 9 )
 	--ImplicitByMarchingCube( BlobFunc, 7 )
+	ImplicitByMarchingCube( LumpFunc, 20 )
 
 	Log("FIXUP VCount = "..vertCount)
 end

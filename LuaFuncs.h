@@ -12,16 +12,22 @@ static float Noise( int x, int y, int z ) {
 	float r = (h&65535)/65535.0f;
 	return r;
 }
+static float Noise( int x, int y, int z, int w ) {
+	uint32_t seed = (uint32_t)( x + y * 1024 + z * 1024 * 1024 + w * 1024 * 1024 * 1024 );
+	uint32_t h = jenkins_one_at_a_time_hash( (char *)&seed, sizeof( seed ) );
+	float r = (h&65535)/65535.0f;
+	return r;
+}
 static float Easing( float x ) {
 	return x*x*(3.0f-2.0f*x);
 }
-static float PerlinNoiseOctave( int x, int y, int cellsize, int seed ) {
-	int dx = x%cellsize;
-	int dy = y%cellsize;
+static float PerlinNoiseOctave( float x, float y, int cellsize, int seed ) {
+	float dx = fmod(x,cellsize);
+	float dy = fmod(y,cellsize);
 	int basex = x - dx;
 	int basey = y - dy;
-	float fx = Easing( dx/(float)cellsize );
-	float fy = Easing( dy/(float)cellsize );
+	float fx = Easing( dx/cellsize );
+	float fy = Easing( dy/cellsize );
 	float a = Noise(basex,basey,seed);
 	float b = Noise(basex+cellsize,basey,seed);
 	float c = Noise(basex,basey+cellsize,seed);
@@ -31,10 +37,46 @@ static float PerlinNoiseOctave( int x, int y, int cellsize, int seed ) {
 	float abcd = (ab*(1-fy)+cd*fy);
 	return abcd;
 }
-static float PerlinNoise( int x, int y, int low, int high, int seed ) {
+static float PerlinNoise3Octave( float x, float y, float z, int cellsize, int seed ) {
+	float dx = fmod(x,cellsize);
+	float dy = fmod(y,cellsize);
+	float dz = fmod(z,cellsize);
+	int basex = x - dx;
+	int basey = y - dy;
+	int basez = z - dz;
+	float fx = Easing( dx/cellsize );
+	float fy = Easing( dy/cellsize );
+	float fz = Easing( dz/cellsize );
+	float a = Noise(basex,basey,basez,seed);
+	float b = Noise(basex+cellsize,basey,basez,seed);
+	float c = Noise(basex,basey+cellsize,basez,seed);
+	float d = Noise(basex+cellsize,basey+cellsize,basez,seed);
+	float e = Noise(basex,basey,basez+cellsize,seed);
+	float f = Noise(basex+cellsize,basey,basez+cellsize,seed);
+	float g = Noise(basex,basey+cellsize,basez+cellsize,seed);
+	float h = Noise(basex+cellsize,basey+cellsize,basez+cellsize,seed);
+	float ab = (a*(1-fx)+b*fx);
+	float cd = (c*(1-fx)+d*fx);
+	float ef = (e*(1-fx)+f*fx);
+	float gh = (g*(1-fx)+h*fx);
+	float abcd = (ab*(1-fy)+cd*fy);
+	float efgh = (ef*(1-fy)+gh*fy);
+	float abcdefgh = (abcd*(1-fz)+efgh*fz);
+	return abcdefgh;
+}
+static float PerlinNoise( float x, float y, int low, int high, int seed ) {
 	float r = 0;
 	do {
 		r = r/2 + PerlinNoiseOctave( x, y, low, seed );
+		seed += 1;
+		low *= 2;
+	} while( low <= high );
+	return r;
+}
+static float PerlinNoise3( float x, float y, float z, int low, int high, int seed ) {
+	float r = 0;
+	do {
+		r = r/2 + PerlinNoise3Octave( x, y, z, low, seed );
 		seed += 1;
 		low *= 2;
 	} while( low <= high );
@@ -56,12 +98,22 @@ static int l_PerlinOctave( lua_State *L ) {
 	return 1;  /* number of results */
 }
 static int l_Perlin( lua_State *L ) {
-	uint32_t x = (uint32_t)lua_tonumber(L, 1);  /* get argument */
-	uint32_t y = (uint32_t)lua_tonumber(L, 2);  /* get argument */
+	float x = (float)lua_tonumber(L, 1);  /* get argument */
+	float y = (float)lua_tonumber(L, 2);  /* get argument */
 	uint32_t low = (uint32_t)lua_tonumber(L, 3);  /* get argument */
 	uint32_t high = (uint32_t)lua_tonumber(L, 4);  /* get argument */
 	uint32_t seed = (uint32_t)lua_tonumber(L, 5);  /* get argument */
 	lua_pushnumber(L, PerlinNoise(x,y,low,high,seed));  /* push result */
+	return 1;  /* number of results */
+}
+static int l_Perlin3( lua_State *L ) {
+	float x = (float)lua_tonumber(L, 1);  /* get argument */
+	float y = (float)lua_tonumber(L, 2);  /* get argument */
+	float z = (float)lua_tonumber(L, 3);  /* get argument */
+	uint32_t low = (uint32_t)lua_tonumber(L, 4);  /* get argument */
+	uint32_t high = (uint32_t)lua_tonumber(L, 5);  /* get argument */
+	uint32_t seed = (uint32_t)lua_tonumber(L, 6);  /* get argument */
+	lua_pushnumber(L, PerlinNoise3(x,y,z,low,high,seed));  /* push result */
 	return 1;  /* number of results */
 }
 static int l_Sin( lua_State *L ) {
@@ -294,6 +346,7 @@ static void RegisterLuaFuncs( lua_State *L ) {
 	lua_pushcfunction(L, l_Noise); lua_setglobal(L, "Noise");
 	lua_pushcfunction(L, l_PerlinOctave); lua_setglobal(L, "PerlinOctave");
 	lua_pushcfunction(L, l_Perlin); lua_setglobal(L, "Perlin");
+	lua_pushcfunction(L, l_Perlin3); lua_setglobal(L, "Perlin3");
 	lua_pushcfunction(L, l_Sin); lua_setglobal(L, "Sin");
 	lua_pushcfunction(L, l_Cos); lua_setglobal(L, "Cos");
 	lua_pushcfunction(L, l_Tan); lua_setglobal(L, "Tan");
