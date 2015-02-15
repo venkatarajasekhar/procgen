@@ -18,6 +18,7 @@ struct LuaGenerator {
 	Scene *scene;
 	BadMesh *mesh;
 	Image *texture;
+	bool loadedMesh;
 	
 	time_t lastFileTime;
 	time_t currentFileTime;
@@ -28,6 +29,8 @@ struct LuaGenerator {
 	~LuaGenerator();
 	bool IsValid();
 	void Load( const char *filename );
+	void LoadLua( const char *filename );
+	void LoadMesh( const char *filename );
 	void Update();
 	bool FunctionExists( const char *functionName );
 	int GetIntFromLua( const char *functionName );

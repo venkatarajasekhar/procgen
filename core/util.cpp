@@ -156,4 +156,11 @@ char * ReadFileToString( const char *filename ) {
 	return buf;
 }
 
+bool EndsWith( const char *str, const char *suffix ) {
+	int diff = strlen( str ) - strlen( suffix );
+	if( diff > 0 ) {
+		return 0 == strcmp( str + diff, suffix );
+	}
+	return false;
+}
 

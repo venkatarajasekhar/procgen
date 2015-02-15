@@ -111,4 +111,6 @@ char * ReadFileToString( const char *filename );
 
 uint32_t GoodRandom();
 
+bool EndsWith( const char *str, const char *suffix );
+
 #endif

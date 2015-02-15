@@ -20,8 +20,10 @@ struct BadMesh {
 
 	void DrawTriangles();
 	void Clear();
-	void Load( const char *filename );
-	void Load( const char *filename, const Mat44 &correction );
+	bool Load( const char *filename );
+	bool Load( const char *filename, const Mat44 &correction );
+	bool LoadPLY( const char *filename, const Mat44 &correction );
+	bool LoadOBJ( const char *filename, const Mat44 &correction );
 };
 
 #endif

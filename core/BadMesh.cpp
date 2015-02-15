@@ -1,6 +1,7 @@
 #include "BadMesh.h"
 #include "graphics.h"
 #include "Shader.h"
+#include "util.h"
 
 #include <string.h>
 #include <vector>
@@ -12,10 +13,19 @@ inline bool isWhitespace( char c ) {
 	return c == ' ' || c == '\n' || c == '\r' || c == '\t';
 }
 
-void BadMesh::Load( const char *filename ) {
-	Load( filename, gIdentityMat );
+bool BadMesh::Load( const char *filename ) {
+	return Load( filename, gIdentityMat );
 }
-void BadMesh::Load( const char *filename, const Mat44 &correction ) {
+bool BadMesh::Load( const char *filename, const Mat44 &correction ) {
+	if( EndsWith( filename, ".ply" ) ) {
+		return LoadPLY( filename, correction );
+	}
+	if( EndsWith( filename, ".obj" ) ) {
+		return LoadOBJ( filename, correction );
+	}
+	return false;
+}
+bool BadMesh::LoadPLY( const char *filename, const Mat44 &correction ) {
 	if( FILE *fp = fopen( filename, "r" ) ) {
 		std::vector<std::string> lines;
 		char line[128];
@@ -117,8 +127,104 @@ section_start:
 			}
 			++i;
 		}
+		return true;
 	} else {
 		SetAsCube();
+		return false;
+	}
+}
+
+bool BadMesh::LoadOBJ( const char *filename, const Mat44 &correction ) {
+	if( FILE *fp = fopen( filename, "r" ) ) {
+		std::vector<std::string> lines;
+		char line[128];
+		while( fgets( line, sizeof(line), fp ) ) {
+			while( isWhitespace( line[ strlen( line ) - 1 ] ) ) line[ strlen( line ) - 1 ] = 0;
+			lines.push_back( line );
+		}
+
+		std::vector<std::string>::iterator i = lines.begin();
+
+		std::vector<Vec3> positions, normals;
+		std::vector<Vec2> uvs;
+
+		while( i != lines.end() ) {
+			if( *i == "end_header" ) {
+				++i;
+				break;
+			}
+			strcpy( line, i->c_str() );
+			char *pch = strtok( line, " " );
+			if( pch ) {
+				if( strcmp( pch, "g" ) == 0 ) {
+					// in a new mesh bit:
+					//positions.clear();
+					//normals.clear();
+					//uvs.clear();
+					//CommitPartialMesh();
+					pch = strtok( NULL, " " );
+					//SetName( pch );
+				} else if( strcmp( pch, "v" ) == 0 ) {
+					// push a vert position
+					strcpy( line, i->c_str() );
+					Vec3 p;
+					sscanf( line, "v %f %f %f", &p.x, &p.y, &p.z );
+					positions.push_back( correction * p );
+				} else if( strcmp( pch, "vt" ) == 0 ) {
+					// push a uv
+					strcpy( line, i->c_str() );
+					Vec2 uv;
+					sscanf( line, "vt %f %f", &uv.x, &uv.y );
+					uvs.push_back( uv );
+				} else if( strcmp( pch, "vn" ) == 0 ) {
+					// push a normal
+					strcpy( line, i->c_str() );
+					Vec3 n;
+					sscanf( line, "vn %f %f %f", &n.x, &n.y, &n.z );
+					normals.push_back( correction * n );
+				} else if( strcmp( pch, "f" ) == 0 ) {
+					// push a face
+					strcpy( line, i->c_str() );
+					bool justVerts = strchr(line,'/') == 0;
+
+					if( justVerts ) {
+						int a,b,c;
+						sscanf( line, "f %i %i %i", &a, &b, &c );
+						a -= 1;
+						b -= 1;
+						c -= 1;
+						PushV( positions[a] );
+						PushV( positions[b] );
+						PushV( positions[c] );
+					} else {
+						int av,bv,cv;
+						int avt,bvt,cvt;
+						int avn,bvn,cvn;
+						sscanf( line, "f %i/%i/%i %i/%i/%i %i/%i/%i",
+								&av, &avt, &avn,
+								&bv, &bvt, &bvn,
+								&cv, &cvt, &cvn );
+						av -= 1;
+						bv -= 1;
+						cv -= 1;
+						avt -= 1;
+						bvt -= 1;
+						cvt -= 1;
+						avn -= 1;
+						bvn -= 1;
+						cvn -= 1;
+						PushVNUC( positions[av], normals[avn], uvs[avt] );
+						PushVNUC( positions[bv], normals[bvn], uvs[bvt] );
+						PushVNUC( positions[cv], normals[cvn], uvs[cvt] );
+					}
+				}
+			}
+			++i;
+		}
+		return true;
+	} else {
+		SetAsCube();
+		return false;
 	}
 }
 

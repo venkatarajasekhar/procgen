@@ -9,7 +9,7 @@ LuaGenerator *gCurrentRenderGenerator;
 GenMap gGenerators;
 LuaGenerator *gRootScene;
 
-LuaGenerator::LuaGenerator() : L(0), scene(0), mesh(0), texture(0), lastFileTime(0), currentFileTime(0) {
+LuaGenerator::LuaGenerator() : L(0), scene(0), mesh(0), texture(0), loadedMesh(false), lastFileTime(0), currentFileTime(0) {
 	m_filename[0] = 0;
 }
 
@@ -17,6 +17,7 @@ void LuaGenerator::ClearoutLuaState() {
 	if( L ) {
 		lua_close( L ); L = 0;
 	}
+	loadedMesh = false;
 }
 LuaGenerator::~LuaGenerator() {
 	ClearoutLuaState();
@@ -28,6 +29,15 @@ bool LuaGenerator::IsValid() {
 
 void LuaGenerator::Load( const char *filename ) {
 	ClearoutLuaState();
+	if( EndsWith( filename, ".lua" ) ) {
+		LoadLua( filename );
+	} else {
+		LoadMesh( filename );
+	}
+	if( m_filename != filename ) strcpy( m_filename, filename );
+	lastFileTime = currentFileTime;
+}
+void LuaGenerator::LoadLua( const char *filename ) {
 	if( char * configBuffer = ReadFileToString( filename ) ) {
 		L = luaL_newstate();
 		luaL_openlibs( L );
@@ -49,12 +59,20 @@ void LuaGenerator::Load( const char *filename ) {
 		}
 		free( configBuffer );
 	}
-	if( m_filename != filename ) strcpy( m_filename, filename );
-	lastFileTime = currentFileTime;
+}
+void LuaGenerator::LoadMesh( const char *filename ) {
+	if( mesh ) {
+		delete mesh;
+	}
+	mesh = new BadMesh();
+	Log( 3, "Loading standard mesh : %s\n", filename );
+	if( mesh->Load(filename ) ) {
+		loadedMesh = true;
+	}
 }
 void LuaGenerator::Update() {
 	if( m_filename[0] ) {
-		if( L ) {
+		if( L || loadedMesh ) {
 			currentFileTime = get_mtime(m_filename, 0);
 			if( lastFileTime ) {
 				if( currentFileTime == lastFileTime ) {
@@ -352,9 +370,14 @@ LuaGenerator * AddMeshGenerator( const char *guessName, const char *params ) {
 		char filename[128];
 		lg = new LuaGenerator;
 		sprintf( filename, "data/procmesh-%s.lua", name );
-		lg->Load( filename );
-		lg->GenMesh(params);
-		//gGenerators[lg->GetScriptName()] = lg;
+		if( FILE *fp = fopen( filename, "r" ) ) {
+			fclose( fp );
+			lg->Load( filename );
+			lg->GenMesh(params);
+		} else {
+			strcpy( filename, guessName );
+			lg->Load( filename );
+		}
 		gGenerators[guessName] = lg;
 	} else {
 		lg = gGenerators[guessName];
