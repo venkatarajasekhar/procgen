@@ -15,29 +15,36 @@ using namespace std;
 #include "Scene.h"
 #include "LuaGenerator.h"
 
+#include "InputHandlers.h"
+
 extern GLShader Shader_Prelit;
 BadMesh *cube;
 Vec3 from, to;
 extern float g_fGameTime;
 
-float gUserAngleYaw = 0.1f;
-float gUserAnglePitch = 0.4f;
+//float gUserAngleYaw = 0.1f;
+//float gUserAnglePitch = 0.4f;
+
+InputHanlder_YawPitch camInput;
 
 void GameUpdate() {
 	void UpdateProcGenTexture();
 	UpdateProcGenTexture();
 	glUniform1f(DefaultShaderProgram.timeLocation, g_fGameTime);
 	double drawStart = glfwGetTime();
-	if( glfwGetKey(GLFW_KEY_UP) )
-		gUserAnglePitch += 0.1f;
-	if( glfwGetKey(GLFW_KEY_DOWN) )
-		gUserAnglePitch -= 0.1f;
-	if( glfwGetKey(GLFW_KEY_LEFT) )
-		gUserAngleYaw -= 0.1f;
-	if( glfwGetKey(GLFW_KEY_RIGHT) )
-		gUserAngleYaw += 0.1f;
-	const float yAngle = gUserAngleYaw;//0.1f * drawStart;
-	const float xAngle = gUserAnglePitch;//0.4f;
+	camInput.Update( 0.1f );
+	//if( glfwGetKey(GLFW_KEY_UP) )
+		//gUserAnglePitch += 0.1f;
+	//if( glfwGetKey(GLFW_KEY_DOWN) )
+		//gUserAnglePitch -= 0.1f;
+	//if( glfwGetKey(GLFW_KEY_LEFT) )
+		//gUserAngleYaw -= 0.1f;
+	//if( glfwGetKey(GLFW_KEY_RIGHT) )
+		//gUserAngleYaw += 0.1f;
+	//const float yAngle = gUserAngleYaw;//0.1f * drawStart;
+	//const float xAngle = gUserAnglePitch;//0.4f;
+	const float yAngle = camInput.GetYaw();//0.1f * drawStart;
+	const float xAngle = camInput.GetPitch();//0.4f;
 	float sy = sin( yAngle );
 	float cy = cos( yAngle );
 	float sx = sin( xAngle );
